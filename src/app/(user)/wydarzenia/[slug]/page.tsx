@@ -1,5 +1,3 @@
-// src/app/(user)/wydarzenia/[slug]/page.tsx
-
 import { PortableText } from "@portabletext/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -60,17 +58,27 @@ export default async function EventDetailPage({
   }
 
   const d = new Date(eventRaw.date);
+  const isPastEvent = d < new Date(); // Sprawdzamy czy koncert już minął
+
   const day = String(d.getDate()).padStart(2, "0");
   const month = monthsPl[d.getMonth()];
   const year = String(d.getFullYear());
   const time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 
-  // Pomocnicza zmienna sprawdzająca, czy link faktycznie istnieje i ma być użyty
   const hasLink = eventRaw.hasTicketLink && eventRaw.ticketLink;
 
-  // --- NOWA LOGIKA RENDEROWANIA PRZYCISKÓW BILETOWYCH ---
+  // --- LOGIKA PRZYCISKÓW BILETOWYCH ---
   const renderTicketButton = () => {
-    // 1. Brak miejsc (Wyprzedane) - to ma zawsze priorytet
+    // 0. Wydarzenie się odbyło
+    if (isPastEvent) {
+      return (
+        <div className="font-montserrat flex w-full cursor-default items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-4 text-center text-[0.65rem] leading-snug font-bold tracking-widest text-white/30 uppercase sm:px-8 sm:text-xs sm:tracking-[0.2em]">
+          Wydarzenie archiwalne
+        </div>
+      );
+    }
+
+    // 1. Brak miejsc (Wyprzedane)
     if (!eventRaw.hasTicketsAvailable) {
       return (
         <div className="font-montserrat flex w-full cursor-not-allowed items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-4 text-center text-[0.65rem] leading-snug font-bold tracking-widest text-white/30 uppercase sm:px-8 sm:text-xs sm:tracking-[0.2em]">
@@ -82,14 +90,12 @@ export default async function EventDetailPage({
     // 2. DARMO WEJŚCIÓWKI
     if (eventRaw.ticketType === "darmowe") {
       if (!hasLink) {
-        // Darmowe, bez linku -> "Zapraszamy" (Informacyjny, lekko widoczny, zachęcający)
         return (
           <div className="font-montserrat flex w-full cursor-default items-center justify-center rounded-full border border-white/20 bg-white/10 px-4 py-4 text-center text-[0.65rem] leading-snug font-bold tracking-widest text-white uppercase sm:px-8 sm:text-xs sm:tracking-[0.2em]">
             Zapraszamy
           </div>
         );
       } else {
-        // Darmowe, jest link -> "Wybierz sobie miejsce"
         return (
           <a
             href={eventRaw.ticketLink}
@@ -107,14 +113,12 @@ export default async function EventDetailPage({
     // 3. PŁATNE WYDARZENIA
     else {
       if (!hasLink) {
-        // Płatne, brak linku -> "Bilety wkrótce" (Zablokowany, wyszarzony)
         return (
           <div className="font-montserrat flex w-full cursor-not-allowed items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-4 text-center text-[0.65rem] leading-snug font-bold tracking-widest text-white/30 uppercase sm:px-8 sm:text-xs sm:tracking-[0.2em]">
             Bilety wkrótce
           </div>
         );
       } else {
-        // Płatne, jest link -> "Kup bilet"
         return (
           <a
             href={eventRaw.ticketLink}
@@ -132,9 +136,9 @@ export default async function EventDetailPage({
     }
   };
 
-  // --- LOGIKA OPISU POD PRZYCISKIEM ---
+  // --- OPIS POD PRZYCISKIEM ---
   const getTicketSubtext = () => {
-    const hasLink = eventRaw.hasTicketLink && eventRaw.ticketLink;
+    if (isPastEvent) return "To wydarzenie już się odbyło";
 
     if (!eventRaw.hasTicketsAvailable)
       return "Dziękujemy za ogromne zainteresowanie";
@@ -256,7 +260,6 @@ export default async function EventDetailPage({
                     )}
                   </div>
 
-                  {/* POKAZUJEMY CENĘ BILETÓW JEŚLI JEST TO WYDARZENIE PŁATNE */}
                   {eventRaw.ticketType === "platne" && eventRaw.ticketPrice && (
                     <div>
                       <span className="font-montserrat mb-2 block text-[0.6rem] font-bold tracking-[0.3em] text-white/40 uppercase">

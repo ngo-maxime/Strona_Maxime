@@ -1,5 +1,3 @@
-// src/app/(user)/wydarzenia/page.tsx
-
 import Image from "next/image";
 import Link from "next/link";
 import { defineQuery } from "next-sanity";
@@ -7,9 +5,9 @@ import EventsList, { type EventProps } from "@/components/events/EventsList";
 import FadeIn from "@/components/ui/FadeIn";
 import { sanityFetch } from "@/sanity/lib/live";
 
-// DODANO: Warunek && date >= $today
+// Pobieramy wszystkie wydarzenia
 const EVENTS_QUERY = defineQuery(`
-  *[_type == "event" && date >= $today] | order(date asc) {
+  *[_type == "event"] | order(date desc) {
     "id": slug.current,
     title,
     date,
@@ -35,6 +33,7 @@ const monthsPl = [
 
 function formatEventData(rawEvent: any): EventProps {
   const d = rawEvent.date ? new Date(rawEvent.date) : new Date();
+  const now = new Date();
 
   return {
     id: rawEvent.id,
@@ -45,25 +44,21 @@ function formatEventData(rawEvent: any): EventProps {
     month: monthsPl[d.getMonth()],
     year: String(d.getFullYear()),
     time: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
+    date: rawEvent.date, // DODANO: Pełna data do sortowania po stronie klienta
+    isPast: d < now,
   };
 }
 
 export default async function EventsPage() {
-  // Pobieramy aktualną datę obciętą do "YYYY-MM-DD"
-  // Dzięki temu dzisiejsze koncerty będą widoczne na liście do końca dnia
-  const today = new Date().toISOString().split("T")[0];
-
-  // Przekazujemy parametr `today` do zapytania GROQ
   const { data } = await sanityFetch({
     query: EVENTS_QUERY,
-    params: { today },
   });
 
   const formattedEvents = data.map(formatEventData);
 
   return (
     <main className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full">
-      {/* --- HERO SECTION (Renderowane na serwerze) --- */}
+      {/* --- HERO SECTION --- */}
       <section className="relative z-10 flex min-h-[60vh] w-full flex-col justify-center overflow-hidden px-6 pt-32 lg:px-12 lg:pt-40">
         <div className="pointer-events-none absolute top-20 -right-20 z-0 h-160 w-160 opacity-5 lg:top-0 lg:h-240 lg:w-240">
           <Image
@@ -90,9 +85,9 @@ export default async function EventsPage() {
           </FadeIn>
           <FadeIn delay="500ms" className="mt-7 max-w-xl lg:mt-19">
             <p className="font-montserrat mb-5 text-lg leading-relaxed font-light tracking-wide text-white/70">
-              Sprawdź harmonogram naszych nadchodzących koncertów. Dołącz do nas
-              na żywo i stań się częścią widowiska, o którym mówi się jeszcze
-              długo po opadnięciu kurtyny.
+              Sprawdź harmonogram naszych nadchodzących oraz minionych
+              koncertów. Dołącz do nas na żywo i stań się częścią widowiska, o
+              którym mówi się jeszcze długo po opadnięciu kurtyny.
             </p>
           </FadeIn>
         </div>
@@ -105,7 +100,7 @@ export default async function EventsPage() {
         </div>
       </section>
 
-      {/* --- CTA SECTION (Renderowane na serwerze) --- */}
+      {/* --- CTA SECTION --- */}
       <section className="bg-raisinBlack relative z-10 w-full py-32 text-center lg:py-40">
         <FadeIn>
           <span className="font-youngest text-arylideYellow text-4xl md:text-5xl">
