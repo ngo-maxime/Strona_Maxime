@@ -1,67 +1,84 @@
 // src/app/(user)/oferta/page.tsx
 import type { Metadata } from "next";
 import Image from "next/image";
-import ContactForm from "@/components/contact/ContactForm"; // <-- Twój istniejący formularz
+import ContactForm from "@/components/contact/ContactForm";
 import OfferStats from "@/components/offer/OfferStats";
 import FadeIn from "@/components/ui/FadeIn";
 
 export const metadata: Metadata = {
-  title: "Oferta Koncertowa i Współpraca",
+  title: "Oferta Eventowa | Fundacja i Orkiestra Maxime",
   description:
-    "Z nami każde wydarzenie to sukces. Pełna orkiestra symfoniczna, składy kameralne, widowiska plenerowe i gale biznesowe z Fundacją Maxime.",
+    "Kompleksowa oprawa muzyczna wydarzeń: eventy firmowe, imprezy okolicznościowe oraz wielkie koncerty plenerowe i Dni Miast. Projekty szyte na miarę.",
   alternates: {
     canonical: "/oferta",
   },
 };
 
-const mainCategories = [
+const eventTypes = [
   {
-    id: "gale-i-biznes",
-    badge: "Prestiż & Elegancja",
-    title: "Gale, Jubileusze & Biznes",
+    number: "01",
+    tag: "Biznes & Prestiż",
+    title: "Eventy Firmowe i Biznesowe",
+    subtitle: "Gale, bankiety, jubileusze firm, konferencje",
     description:
-      "Uroczyste gale firmowe, bankiety, wręczenia nagród oraz spotkania VIP. Zapewniamy oprawę na najwyższym poziomie artystycznym, która podkreśla rangę i klasę wydarzenia.",
-    features: [
-      "Kwartety smyczkowe i orkiestrowe składy kameralne",
-      "Muzyka filmowa, musicalowa i standardy estradowe",
-      "Elastyczność scenariuszowa i dopasowany dress code",
+      "Muzyka, która buduje wizerunek marki i nadaje wydarzeniu najwyższą rangę. Realizujemy oprawę zarówno kameralnych spotkań VIP, uroczystych bankietów podsumowujących rok, jak i wielkich jubileuszy firmowych.",
+    examples: [
+      "Jubileusze i gale wręczenia nagród",
+      "Bankiety biznesowe i spotkania zarządów",
+      "Oprawa muzyczna premier produktów i konferencji",
+      "Klimatyczne tło muzyczne lub widowiskowe show na scenie",
     ],
   },
   {
-    id: "koncerty-i-plenery",
-    badge: "Wielka Scena",
-    title: "Koncerty Symfoniczne & Dni Miast",
+    number: "02",
+    tag: "Emocje & Klimat",
+    title: "Wydarzenia Okazjonalne i Prywatne",
+    subtitle: "Rocznice, recitale, uroczystości okolicznościowe",
     description:
-      "Monumentalne widowiska plenerowe dla samorządów, domów kultury i festiwali. Pełen skład Orkiestry Maxime pod batutą dyrygenta gromadzi i porywa wielotysięczną widownię.",
-    features: [
-      "Ponad 40 instrumentalistów na scenie",
-      "Polska klasyka, hity filmowe i autorskie programy",
-      "Kompleksowa koordynacja repertuarowa i techniczna",
+      "Wyjątkowe chwile wymagają unikalnej atmosfery. Zapewniamy szlachetne brzmienie żywych instrumentów, które tworzy intymny, wzruszający nastrój podczas prywatnych uroczystości i celebracji ważnych momentów.",
+    examples: [
+      "Ekskluzywne przyjęcia okolicznościowe i rocznice",
+      "Kameralne recitale w pałacach i rezydencjach",
+      "Uroczystości zaślubin i ceremonie oficjalne",
+      "Repertuar dobierany pod indywidualne życzenie",
     ],
   },
   {
-    id: "uroczystosci-prywatne",
-    badge: "Intymny Klimat",
-    title: "Uroczystości Prywatne & Recitale",
+    number: "03",
+    tag: "Wielka Skala",
+    title: "Wydarzenia Masowe, Plenery & Dni Miast",
+    subtitle: "Koncerty plenerowe, festiwale, rynki miejskie, amfiteatry",
     description:
-      "Ekskluzywne przyjęcia, prywatne recitale oraz ceremonie. Szlachetne brzmienie instrumentów akustycznych na żywo buduje niepowtarzalne emocje i wspomnienia.",
-    features: [
-      "Duety, tria oraz kwartety smyczkowe / dęte",
-      "Indywidualnie dobrana playlista i dedykacje",
-      "Niepowtarzalna akustyka żywych instrumentów",
+      "Potężne brzmienie pełnego składu orkiestry symfonicznej, które gromadzi i porywa wielotysięczną widownię. Realizujemy widowiska rozrywkowe, patriotyczne i filmowe, które łączą pokolenia i są wizytówką każdego miasta.",
+    examples: [
+      "Dni Miast i samorządowe święta kultury",
+      "Festiwale plenerowe i widowiska w amfiteatrach",
+      "Koncerty tematyczne (muzyka filmowa, polskie przeboje, kolędy)",
+      "Współpraca z uznanymi gwiazdami polskiej estrady",
     ],
   },
+];
+
+const howWeWork = [
   {
-    id: "aranzacje-specjalne",
-    badge: "Brzmienie Na Miarę",
-    title: "Aranżacje & Dedykowana Produkcja",
-    description:
-      "Nasz zespół kompozytorów tworzy unikalne partytury na życzenie. Przekładamy współczesne przeboje muzyki rozrywkowej czy rockowej na potężne instrumentarium orkiestry.",
-    features: [
-      "Indywidualna orkiestracja i nuty na zamówienie",
-      "Współpraca z zaproszonymi wokalistami i solistami",
-      "Realizacja nagrań studyjnych i projektów cross-genre",
-    ],
+    step: "01",
+    title: "Konsultacja i pomysł",
+    desc: "Mówisz nam, jaki charakter ma Twój event, ile osób bierze w nim udział oraz jaki masz budżet. My proponujemy najlepszy kierunek.",
+  },
+  {
+    step: "02",
+    title: "Skład i repertuar na miarę",
+    desc: "Nie narzucamy gotowych szablonów. Dobieramy skład – od 2 muzyków po 40-osobową orkiestrę – oraz piszemy dedykowane aranżacje.",
+  },
+  {
+    step: "03",
+    title: "Koordynacja techniczna",
+    desc: "Bierzemy na siebie kwestie ridersów, prób, dyrygenta i logistyki artystycznej, współpracując bezpośrednio z Twoją ekipą techniczną.",
+  },
+  {
+    step: "04",
+    title: "Koncert na najwyższym poziomie",
+    desc: "Zapewniamy widowisko, które zachwyca gości, zbiera owacje na stojąco i pozostaje w pamięci na lata.",
   },
 ];
 
@@ -69,10 +86,10 @@ export default function OfertaPage() {
   return (
     <main className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full overflow-x-hidden">
       {/* ============================================================== */}
-      {/* 1. HERO W STYLU XTRAINING + MAXIME */}
+      {/* 1. HERO W STYLU AGENCJI EVENTOWEJ (MOCNY PRZEKAZ) */}
       {/* ============================================================== */}
       <section className="relative z-10 flex min-h-[70vh] w-full flex-col justify-center px-6 pt-36 pb-20 lg:px-12 lg:pt-44">
-        {/* Dekoracyjne elementy tła */}
+        {/* Znak wodny w tle */}
         <div className="pointer-events-none absolute top-10 -right-20 z-0 h-160 w-160 opacity-5 lg:-top-20 lg:-right-32 lg:h-225 lg:w-225">
           <Image
             src="/Asset-1.svg"
@@ -83,7 +100,7 @@ export default function OfertaPage() {
         </div>
         <div className="pointer-events-none absolute top-1/2 left-0 z-0 -translate-y-1/2 opacity-[0.02] mix-blend-overlay select-none">
           <span className="font-montserrat text-[24vw] leading-none font-black whitespace-nowrap text-white">
-            OFERTA
+            EVENTY
           </span>
         </div>
 
@@ -99,19 +116,19 @@ export default function OfertaPage() {
 
           <FadeIn delay="200ms">
             <h1 className="font-montserrat text-5xl leading-[1.05] font-black tracking-tight text-white md:text-7xl lg:text-[6.8rem]">
-              Koncerty, które <br />
+              Każde wydarzenie <br />
               <span className="font-youngest text-arylideYellow relative top-3 inline-block -rotate-2 text-6xl font-normal md:text-8xl lg:top-6 lg:text-[10rem]">
-                tworzą wspomnienia.
+                szyte na miarę.
               </span>
             </h1>
           </FadeIn>
 
           <FadeIn delay="400ms" className="mt-10 max-w-2xl lg:mt-20">
             <p className="font-montserrat text-base leading-relaxed font-light tracking-wide text-white/70 sm:text-lg">
-              Witaj w Maxime – Twoim partnerze w organizacji niezrównanych
-              wrażeń muzycznych. Łączymy pasję młodych wirtuozów z
-              bezkompromisowym profesjonalizmem, dostarczając oprawę od
-              kameralnych bankietów po monumentalne symfonie.
+              Od kameralnych bankietów biznesowych, przez uroczystości
+              okolicznościowe, aż po monumentalne koncerty plenerowe dla tysięcy
+              mieszkańców. Zapewniamy profesjonalną oprawę muzyczną dostosowaną
+              do skali Twojego wydarzenia.
             </p>
           </FadeIn>
 
@@ -136,25 +153,25 @@ export default function OfertaPage() {
               </svg>
             </a>
             <a
-              href="#formaty"
+              href="#formaty-eventowe"
               className="font-montserrat hover:border-arylideYellow hover:text-arylideYellow flex items-center rounded-full border border-white/20 bg-transparent px-8 py-4 text-xs font-bold tracking-[0.2em] text-white uppercase transition-all duration-300"
             >
-              Zobacz formaty
+              Poznaj możliwości
             </a>
           </FadeIn>
         </div>
       </section>
 
       {/* ============================================================== */}
-      {/* 2. ANIMOWANE LICZNIKI (OD 0 DO TARGETU) */}
+      {/* 2. ANIMOWANE LICZNIKI (0 -> DOCELOWA WARTOŚĆ) */}
       {/* ============================================================== */}
       <OfferStats />
 
       {/* ============================================================== */}
-      {/* 3. CZTERY FILARY OFERTY (KAFELKI W STYLU XTRAINING) */}
+      {/* 3. TRZY GŁÓWNE KATEGORIE WYDARZEŃ (W STYLU XTRAINING) */}
       {/* ============================================================== */}
       <section
-        id="formaty"
+        id="formaty-eventowe"
         className="relative z-20 w-full px-6 py-24 lg:px-12 lg:py-36"
       >
         <div className="mx-auto w-full max-w-7xl">
@@ -163,69 +180,83 @@ export default function OfertaPage() {
               <div className="mb-4 flex items-center gap-4">
                 <div className="bg-arylideYellow h-1 w-12" />
                 <span className="font-youngest text-arylideYellow text-3xl lg:text-4xl">
-                  Zakres możliwości
+                  Co możemy dla Ciebie zrealizować
                 </span>
               </div>
               <h2 className="font-montserrat text-3xl font-black text-white sm:text-5xl lg:text-6xl">
-                Profesjonalna oprawa z Maxime.
+                Obsługujemy wydarzenia na każdą skalę.
               </h2>
             </div>
           </FadeIn>
 
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-            {mainCategories.map((item, idx) => (
-              <FadeIn key={item.id} delay={`${idx * 150}ms`}>
-                <div className="group hover:border-arylideYellow/40 relative flex h-full flex-col justify-between overflow-hidden border border-white/10 bg-white/2 p-8 backdrop-blur-sm transition-all duration-500 hover:-translate-y-2 hover:bg-white/4 sm:p-12">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+            {eventTypes.map((item, idx) => (
+              <FadeIn key={item.number} delay={`${idx * 150}ms`}>
+                <div className="group hover:border-arylideYellow/40 relative flex h-full flex-col justify-between border border-white/10 bg-white/2 p-8 backdrop-blur-sm transition-all duration-500 hover:-translate-y-2 hover:bg-white/4 sm:p-10">
                   <div>
                     <div className="mb-6 flex items-center justify-between">
                       <span className="font-montserrat text-arylideYellow border-arylideYellow/30 rounded-full border bg-white/5 px-3.5 py-1.5 text-[0.6rem] font-bold tracking-widest uppercase">
-                        {item.badge}
+                        {item.tag}
                       </span>
                       <span className="font-montserrat text-2xl font-black text-white/20">
-                        0{idx + 1}
+                        {item.number}
                       </span>
                     </div>
 
-                    <h3 className="font-montserrat group-hover:text-arylideYellow mb-4 text-2xl font-bold text-white transition-colors sm:text-3xl">
+                    <h3 className="font-montserrat group-hover:text-arylideYellow mb-2 text-2xl font-bold text-white transition-colors">
                       {item.title}
                     </h3>
+                    <p className="font-montserrat text-arylideYellow/80 mb-6 text-xs font-semibold tracking-wider uppercase">
+                      {item.subtitle}
+                    </p>
 
                     <p className="font-montserrat mb-8 text-sm leading-relaxed font-light text-white/70">
                       {item.description}
                     </p>
 
-                    <ul className="mb-8 flex flex-col gap-3">
-                      {item.features.map((feat) => (
-                        <li
-                          key={feat}
-                          className="font-montserrat flex items-center gap-3 text-xs text-white/85"
-                        >
-                          <span className="bg-arylideYellow h-1.5 w-1.5 rounded-full" />
-                          {feat}
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="border-t border-white/10 pt-6">
+                      <span className="font-montserrat mb-4 block text-[0.65rem] font-bold tracking-widest text-white/40 uppercase">
+                        Przykładowe realizacje:
+                      </span>
+                      <ul className="flex flex-col gap-3">
+                        {item.examples.map((ex) => (
+                          <li
+                            key={ex}
+                            className="font-montserrat flex items-start text-xs leading-relaxed text-white/80"
+                          >
+                            {/* Kulka z wymuszonym stałym rozmiarem i bezpiecznym odstępem mr-3 */}
+                            <span
+                              aria-hidden="true"
+                              className="bg-arylideYellow mt-1.5 mr-3 inline-block h-1.5 w-1.5 shrink-0 rounded-full"
+                            />
+                            <span className="flex-1">{ex}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
 
-                  <a
-                    href="#formularz-kontaktowy"
-                    className="font-montserrat group/link text-arylideYellow inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase"
-                  >
-                    <span>Skonsultuj ten format</span>
-                    <svg
-                      className="h-3.5 w-3.5 transition-transform duration-300 group-hover/link:translate-x-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
+                  <div className="mt-10 pt-6">
+                    <a
+                      href="#formularz-kontaktowy"
+                      className="font-montserrat group/link text-arylideYellow inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M14 5l7 7m0 0l-7 7m7-7H3"
-                      />
-                    </svg>
-                  </a>
+                      <span>Porozmawiajmy o tym evencie</span>
+                      <svg
+                        className="h-3.5 w-3.5 transition-transform duration-300 group-hover/link:translate-x-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M14 5l7 7m0 0l-7 7m7-7H3"
+                        />
+                      </svg>
+                    </a>
+                  </div>
                 </div>
               </FadeIn>
             ))}
@@ -234,89 +265,52 @@ export default function OfertaPage() {
       </section>
 
       {/* ============================================================== */}
-      {/* 4. MODUŁ SEZONOWY: SEZON LETNI VS SEZON ZIMOWY */}
+      {/* 4. FILOZOFIA: „BEZ SZTYWNYCH RAM – PEŁNA ELASTYCZNOŚĆ” */}
       {/* ============================================================== */}
       <section className="relative z-20 w-full bg-[#1e1e1e] py-24 lg:py-36">
         <div className="mx-auto w-full max-w-7xl px-6 lg:px-12">
           <FadeIn>
-            <div className="mb-16 text-center">
+            <div className="mb-20 text-center">
               <span className="font-youngest text-arylideYellow text-3xl md:text-4xl">
-                Elastyczność przez cały rok
+                Elastyczne podejście
               </span>
               <h2 className="font-montserrat mt-2 text-3xl font-black text-white sm:text-5xl">
-                Maxime na każdą porę roku.
+                Nie mamy sztywnych ofert. Mamy rozwiązania.
               </h2>
               <p className="font-montserrat mx-auto mt-4 max-w-2xl text-sm leading-relaxed font-light text-white/60 sm:text-base">
-                Dostosowujemy instrumentarium, nagłośnienie i repertuar do
-                warunków scenicznych oraz klimatu panującego za oknem.
+                Wielkość składu muzycznego, gatunek utworów i oprawę techniczną
+                dostosowujemy ściśle do założeń organizatora. Ty określasz cel –
+                my zajmujemy się resztą.
               </p>
+              <div className="bg-arylideYellow mx-auto mt-6 h-1 w-16" />
             </div>
           </FadeIn>
 
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-            {/* SEZON LETNI */}
-            <FadeIn delay="200ms">
-              <div className="bg-raisinBlack/80 relative flex h-full flex-col justify-between border border-white/10 p-8 transition-all duration-500 hover:border-white/30 sm:p-12">
-                <div>
-                  <div className="mb-4 flex items-center gap-3">
-                    <span className="bg-arylideYellow h-2.5 w-2.5 rounded-full" />
-                    <span className="font-montserrat text-arylideYellow text-xs font-bold tracking-widest uppercase">
-                      Wiosna & Lato
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+            {howWeWork.map((item, i) => (
+              <FadeIn key={item.step} delay={`${i * 150}ms`}>
+                <div className="bg-raisinBlack/60 flex h-full flex-col justify-between border border-white/5 p-8 backdrop-blur-sm transition-all duration-500 hover:-translate-y-2 hover:border-white/20">
+                  <div>
+                    <span className="font-montserrat text-arylideYellow mb-6 block text-4xl font-black">
+                      {item.step}
                     </span>
+                    <h4 className="font-montserrat mb-4 text-xl font-bold text-white">
+                      {item.title}
+                    </h4>
+                    <p className="font-montserrat text-xs leading-relaxed font-light text-white/60 sm:text-sm">
+                      {item.desc}
+                    </p>
                   </div>
-                  <h3 className="font-montserrat mb-4 text-2xl font-bold text-white sm:text-3xl">
-                    Sezon Plenerowy & Festiwalowy
-                  </h3>
-                  <p className="font-montserrat text-sm leading-relaxed font-light text-white/70">
-                    Ciepłe miesiące to czas na wielkie koncerty pod gwiazdami:
-                    amfiteatry, parki miejskie, rynki i sceny plenerowe.
-                    Żywiołowa muzyka filmowa, polskie przeboje symfonicznie i
-                    energia, która porywa publiczność w każdym wieku.
-                  </p>
+                  <div className="bg-arylideYellow/40 mt-8 h-0.5 w-8" />
                 </div>
-                <div className="mt-8 border-t border-white/10 pt-6">
-                  <span className="font-montserrat text-xs font-semibold text-white/50">
-                    Rekomendowane: Dni Miast, Festiwale Plenerowe, Pikniki
-                    Kultury
-                  </span>
-                </div>
-              </div>
-            </FadeIn>
-
-            {/* SEZON ZIMOWY */}
-            <FadeIn delay="400ms">
-              <div className="bg-oxfordBlue/30 relative flex h-full flex-col justify-between border border-white/10 p-8 transition-all duration-500 hover:border-white/30 sm:p-12">
-                <div>
-                  <div className="mb-4 flex items-center gap-3">
-                    <span className="h-2.5 w-2.5 rounded-full bg-white" />
-                    <span className="font-montserrat text-xs font-bold tracking-widest text-white uppercase">
-                      Jesień & Zima
-                    </span>
-                  </div>
-                  <h3 className="font-montserrat mb-4 text-2xl font-bold text-white sm:text-3xl">
-                    Sezon Galowy & Koncerty Kolędowe
-                  </h3>
-                  <p className="font-montserrat text-sm leading-relaxed font-light text-white/70">
-                    Elegancka atmosfera sal koncertowych, teatrów i przestrzeni
-                    pałacowych. Tradycyjne i nowoczesne aranżacje kolęd,
-                    uroczyste gale noworoczne, karnawałowe oraz podsumowania
-                    roku dla samorządów i biznesu.
-                  </p>
-                </div>
-                <div className="mt-8 border-t border-white/10 pt-6">
-                  <span className="font-montserrat text-xs font-semibold text-white/50">
-                    Rekomendowane: Koncerty Świąteczne, Noworoczne, Jubileusze
-                    Firmowe
-                  </span>
-                </div>
-              </div>
-            </FadeIn>
+              </FadeIn>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ============================================================== */}
-      {/* 5. TWÓJ ISTNIEJĄCY FORMULARZ KONTAKTOWY (Z KOTWICĄ) */}
+      {/* 5. TWÓJ ZINTEGROWANY FORMULARZ KONTAKTOWY */}
       {/* ============================================================== */}
       <div id="formularz-kontaktowy">
         <ContactForm />
