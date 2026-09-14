@@ -42,7 +42,7 @@ export default function NavbarInteractive({
             />
           </Link>
 
-          <ul className="hidden grow justify-center lg:flex lg:gap-4 xl:gap-10">
+          <ul className="hidden grow justify-center lg:flex lg:gap-2.5 xl:gap-6 2xl:gap-8">
             <ActiveLinks links={mainLinks} variant="header" />
           </ul>
 
