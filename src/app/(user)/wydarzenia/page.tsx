@@ -79,7 +79,7 @@ export default async function EventsPage() {
             <h1 className="font-montserrat text-5xl leading-[1.05] font-bold tracking-tight text-white md:text-7xl lg:text-[7rem]">
               Scena jest <br />
               <span className="font-youngest text-arylideYellow relative top-4 mb-4 inline-block -rotate-2 text-6xl font-normal md:mb-0 md:text-8xl lg:top-8 lg:text-[10rem]">
-                nasza.
+                nasza
               </span>
             </h1>
           </FadeIn>

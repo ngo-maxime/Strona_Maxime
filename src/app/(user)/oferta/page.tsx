@@ -21,7 +21,7 @@ const eventTypes = [
     title: "Eventy Firmowe i Biznesowe",
     subtitle: "Gale, bankiety, jubileusze firm, konferencje",
     description:
-      "Muzyka, która buduje wizerunek marki i nadaje wydarzeniu najwyższą rangę. Realizujemy oprawę zarówno kameralnych spotkań VIP, uroczystych bankietów podsumowujących rok, jak i wielkich jubileuszy firmowych.",
+      "Muzyka, która buduje wizerunek marki i dodaje wydarzeniu prestiżu. Realizujemy oprawę zarówno kameralnych spotkań czy uroczystych bankietów.",
     examples: [
       "Jubileusze i gale wręczenia nagród",
       "Bankiety biznesowe i spotkania zarządów",
@@ -32,12 +32,11 @@ const eventTypes = [
   {
     number: "02",
     tag: "Emocje & Klimat",
-    title: "Wydarzenia Okazjonalne i Prywatne",
-    subtitle: "Rocznice, recitale, uroczystości okolicznościowe",
-    description:
-      "Wyjątkowe chwile wymagają unikalnej atmosfery. Zapewniamy szlachetne brzmienie żywych instrumentów, które tworzy intymny, wzruszający nastrój podczas prywatnych uroczystości i celebracji ważnych momentów.",
+    title: "Wydarzenia prywatne",
+    subtitle: "Rocznice, recitale, imprezy okolicznościowe",
+    description: "Wyjątkowe chwile wymagają wyjątkowej atmosfery.",
     examples: [
-      "Ekskluzywne przyjęcia okolicznościowe i rocznice",
+      "Przyjęcia okolicznościowe i rocznice",
       "Kameralne recitale w pałacach i rezydencjach",
       "Uroczystości zaślubin i ceremonie oficjalne",
       "Repertuar dobierany pod indywidualne życzenie",
@@ -46,15 +45,15 @@ const eventTypes = [
   {
     number: "03",
     tag: "Wielka Skala",
-    title: "Wydarzenia Masowe, Plenery & Dni Miast",
+    title: "Wydarzenia Masowe, Plenery",
     subtitle: "Koncerty plenerowe, festiwale, rynki miejskie, amfiteatry",
     description:
-      "Potężne brzmienie pełnego składu orkiestry symfonicznej, które gromadzi i porywa wielotysięczną widownię. Realizujemy widowiska rozrywkowe, patriotyczne i filmowe, które łączą pokolenia i są wizytówką każdego miasta.",
+      "Od widowiskowego show muzyka solowego po potężne brzmienie orkiestry symfonicznej, które gromadzi i porywa widownię. Realizujemy widowiska rozrywkowe, patriotyczne i filmowe, które łączą pokolenia i są wizytówką każdego miasta.",
     examples: [
-      "Dni Miast i samorządowe święta kultury",
+      "Dni miasta i samorządowe święta kultury",
       "Festiwale plenerowe i widowiska w amfiteatrach",
       "Koncerty tematyczne (muzyka filmowa, polskie przeboje, kolędy)",
-      "Współpraca z uznanymi gwiazdami polskiej estrady",
+      " Otwartość na współpracę ze znanymi gwiazdami polskiej estrady",
     ],
   },
 ];
@@ -68,17 +67,17 @@ const howWeWork = [
   {
     step: "02",
     title: "Skład i repertuar na miarę",
-    desc: "Nie narzucamy gotowych szablonów. Dobieramy skład – od 2 muzyków po 40-osobową orkiestrę – oraz piszemy dedykowane aranżacje.",
+    desc: "Nie narzucamy gotowych szablonów. Dobieramy skład – od jednego muzyka po sześćdziesięcioosobową orkiestrę.",
   },
   {
     step: "03",
     title: "Koordynacja techniczna",
-    desc: "Bierzemy na siebie kwestie ridersów, prób, dyrygenta i logistyki artystycznej, współpracując bezpośrednio z Twoją ekipą techniczną.",
+    desc: "Bierzemy na siebie kwestie techniczne współpracując z Twoją obsługą techniczną lub organizując technikalia samodzielnie.",
   },
   {
     step: "04",
-    title: "Koncert na najwyższym poziomie",
-    desc: "Zapewniamy widowisko, które zachwyca gości, zbiera owacje na stojąco i pozostaje w pamięci na lata.",
+    title: "Oprawa na najwyższym poziomie",
+    desc: "Zapewniamy widowisko, które zachwyca gości, zbiera owacje na stojąco i pozostaje w pamięci.",
   },
 ];
 
@@ -109,7 +108,7 @@ export default function OfertaPage() {
             <div className="mb-6 flex items-center gap-4">
               <div className="bg-arylideYellow h-px w-12" />
               <span className="font-montserrat text-arylideYellow text-[0.65rem] font-bold tracking-[0.4em] uppercase">
-                Z Nami każde wydarzenie to sukces
+                Jakość, elastyczność i i dbałość o szczegóły to nasze filary
               </span>
             </div>
           </FadeIn>
@@ -125,10 +124,10 @@ export default function OfertaPage() {
 
           <FadeIn delay="400ms" className="mt-10 max-w-2xl lg:mt-20">
             <p className="font-montserrat text-base leading-relaxed font-light tracking-wide text-white/70 sm:text-lg">
-              Od kameralnych bankietów biznesowych, przez uroczystości
-              okolicznościowe, aż po monumentalne koncerty plenerowe dla tysięcy
-              mieszkańców. Zapewniamy profesjonalną oprawę muzyczną dostosowaną
-              do skali Twojego wydarzenia.
+              Od kameralnych wydarzeń biznesowych, przez imprezy
+              okolicznościowe, aż po koncerty dla dużej publiczności. Zapewnimy
+              profesjonalną oprawę muzyczną dostosowaną do skali Twojego
+              wydarzenia.
             </p>
           </FadeIn>
 
@@ -180,11 +179,11 @@ export default function OfertaPage() {
               <div className="mb-4 flex items-center gap-4">
                 <div className="bg-arylideYellow h-1 w-12" />
                 <span className="font-youngest text-arylideYellow text-3xl lg:text-4xl">
-                  Co możemy dla Ciebie zrealizować
+                  Co możemy dla Ciebie zrealizować?
                 </span>
               </div>
               <h2 className="font-montserrat text-3xl font-black text-white sm:text-5xl lg:text-6xl">
-                Obsługujemy wydarzenia na każdą skalę.
+                Obsługujemy wydarzenia na każdą skalę
               </h2>
             </div>
           </FadeIn>
@@ -275,12 +274,12 @@ export default function OfertaPage() {
                 Elastyczne podejście
               </span>
               <h2 className="font-montserrat mt-2 text-3xl font-black text-white sm:text-5xl">
-                Nie mamy sztywnych ofert. Mamy rozwiązania.
+                Dopasujemy ofertę do Twoich oczekiwań
               </h2>
               <p className="font-montserrat mx-auto mt-4 max-w-2xl text-sm leading-relaxed font-light text-white/60 sm:text-base">
-                Wielkość składu muzycznego, gatunek utworów i oprawę techniczną
-                dostosowujemy ściśle do założeń organizatora. Ty określasz cel –
-                my zajmujemy się resztą.
+                Wielkość zespołu muzycznego, charakter i gatunek utworów oraz
+                oprawę techniczną dostosujemy ściśle do założeń organizatora. Ty
+                określasz cel – my zajmujemy się resztą.
               </p>
               <div className="bg-arylideYellow mx-auto mt-6 h-1 w-16" />
             </div>

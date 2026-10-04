@@ -60,14 +60,14 @@ export default async function ContactPage() {
                   <span className="font-youngest text-philippineSilver relative top-2 inline-block -rotate-2 text-6xl font-normal md:text-8xl lg:text-[10rem]">
                     pierwszego
                   </span>{" "}
-                  akordu.
+                  telefonu
                 </h1>
               </FadeIn>
               <FadeIn delay="400ms">
                 <p className="font-montserrat mt-12 max-w-2xl text-base leading-relaxed font-light text-white/70 md:text-lg lg:mt-20">
                   Niezależnie od tego, czy chcesz zorganizować wspólne
                   wydarzenie, dołączyć do zespołu, czy po prostu porozmawiać o
-                  sztuce – jesteśmy tutaj.
+                  muzyce – odezwij się do nas.
                 </p>
               </FadeIn>
             </div>
@@ -86,7 +86,7 @@ export default async function ContactPage() {
             <div className="lg:col-span-4">
               <FadeIn>
                 <h2 className="font-youngest text-arylideYellow text-4xl md:text-5xl lg:text-6xl">
-                  Nasze Namiary
+                  Nasze namiary
                 </h2>
                 <p className="font-montserrat mt-8 max-w-xs text-sm leading-relaxed font-light text-white/50">
                   Kliknij w adres e-mail lub numer telefonu, aby natychmiast
@@ -101,8 +101,8 @@ export default async function ContactPage() {
                 delay="200ms"
                 className="group relative border-b border-white/10 pb-8"
               >
-                <span className="font-montserrat mb-4 block text-[0.6rem] font-bold tracking-[0.4em] text-white/30 uppercase">
-                  Dział Ogólny / E-mail
+                <span className="font-montserrat mb-4 block text-[1rem] font-bold tracking-[0.4em] text-white/30 uppercase">
+                  Biuro
                 </span>
 
                 {/* OTO NASZ NOWY KOMPONENT */}
@@ -116,10 +116,6 @@ export default async function ContactPage() {
                 delay="300ms"
                 className="group relative border-b border-white/10 pb-8"
               >
-                <span className="font-montserrat mb-4 block text-[0.6rem] font-bold tracking-[0.4em] text-white/30 uppercase">
-                  Biuro / Rezerwacje
-                </span>
-
                 {/* OTO NASZ NOWY KOMPONENT (isPhone={true} podmienia tylko klase rozmiaru zeby zachowac proporcje) */}
                 <CopyableContact value={contact.phone} isPhone={true} />
 

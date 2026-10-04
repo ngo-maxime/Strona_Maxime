@@ -18,7 +18,7 @@ export default async function Testimonials() {
   const { data: fetchedReviews } = await sanityFetch({ query: REVIEWS_QUERY });
 
   // Łączymy to co przyszło z bazy z defaultowymi, bierzemy równe 3
-  const displayReviews = [...fetchedReviews,].slice(0, 3);
+  const displayReviews = [...fetchedReviews].slice(0, 3);
 
   // Konfiguracja stylów asymetrycznego widoku dla dokładnie 3 kart
   const cardConfigs = [
@@ -83,7 +83,7 @@ export default async function Testimonials() {
             <h2 className="font-montserrat text-raisinBlack text-5xl leading-[1.1] font-bold lg:text-[5.5rem]">
               Oklaski, które <br />
               <span className="font-youngest relative top-4 inline-block -rotate-2 text-6xl font-normal text-white drop-shadow-sm lg:text-[7.5rem]">
-                nie milkną.
+                nie milkną
               </span>
             </h2>
           </FadeIn>

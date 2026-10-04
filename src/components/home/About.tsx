@@ -45,7 +45,7 @@ export default function About() {
 
                 {/* NOWOŚĆ: Delikatne, kinowe obramowanie wewnętrzne (passe-partout) */}
                 {/* Animuje się w przeciwnym kierunku do zdjęcia, dając niesamowitą głębię */}
-                <div className="pointer-events-none absolute inset-5 z-10 border border-white/20 opacity-60 transition-all duration-1500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[0.96] group-hover:border-arylideYellow/60 group-hover:opacity-100 sm:inset-6" />
+                <div className="group-hover:border-arylideYellow/60 pointer-events-none absolute inset-5 z-10 border border-white/20 opacity-60 transition-all duration-1500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[0.96] group-hover:opacity-100 sm:inset-6" />
 
                 <div className="bg-raisinBlack/20 absolute inset-0 transition-colors duration-700 group-hover:bg-transparent" />
               </div>
@@ -101,17 +101,15 @@ export default function About() {
                 </span>
                 <br />
                 <span className="font-youngest text-arylideYellow relative -top-2 block text-[5rem] leading-none font-normal lg:text-[6.5rem] xl:text-[7rem]">
-                  pokolenia.
+                  pokolenia
                 </span>
               </h2>
             </FadeIn>
 
             <FadeIn delay="700ms">
               <p className="font-montserrat mb-14 max-w-xl text-base leading-[1.8] font-light tracking-wide text-white/60">
-                Fundacja Maxime to coś więcej niż dźwięki. Tworzymy
-                przestrzeń, w której bezkompromisowa ambicja spotyka się z
-                czystym talentem. Budujemy fundamenty dla artystów poszukujących
-                doskonałości.
+                Maxime to przestrzeń, w której radość z wykonywania muzyki łączy
+                się z zaangażowaniem i jakością
               </p>
             </FadeIn>
 

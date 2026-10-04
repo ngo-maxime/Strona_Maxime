@@ -94,7 +94,7 @@ export default async function NewsPage() {
             <div className="mb-6 flex items-center gap-4">
               <div className="bg-arylideYellow h-px w-12" />
               <span className="font-montserrat text-arylideYellow text-[0.65rem] font-bold tracking-[0.4em] uppercase">
-                Aktualności
+                Aktualności - Sprawdź co nowego u nas!
               </span>
             </div>
           </FadeIn>
@@ -102,15 +102,14 @@ export default async function NewsPage() {
             <h1 className="font-montserrat text-5xl leading-[1.05] font-bold tracking-tight text-white md:text-7xl lg:text-[7rem]">
               Pulsujący <br />
               <span className="font-youngest text-arylideYellow relative top-4 inline-block -rotate-2 text-6xl font-normal md:text-8xl lg:top-8 lg:text-[10rem]">
-                rytm.
+                rytm
               </span>
             </h1>
           </FadeIn>
           <FadeIn delay="500ms" className="mt-12 max-w-xl lg:mt-24">
             <p className="font-montserrat text-lg leading-relaxed font-light tracking-wide text-white/70">
-              Zapowiedzi projektów i dźwięki, które
-              zmieniają zasady gry. Zanurz się w świecie Maxime i bądź na
-              bieżąco z każdym naszym ruchem.
+              Zanurz się w świecie Maxime i bądź na bieżąco z każdym naszym
+              ruchem.
             </p>
           </FadeIn>
         </div>
@@ -217,7 +216,8 @@ export default async function NewsPage() {
           </FadeIn>
           <FadeIn delay="300ms" className="mx-auto mt-6 max-w-xl">
             <p className="font-montserrat text-raisinBlack/70 text-sm leading-relaxed font-medium md:text-base">
-              Zapisz się, aby jako pierwszy otrzymywać informacje o nadchodzących koncertach.
+              Zapisz się, aby jako pierwszy otrzymywać informacje o
+              nadchodzących koncertach.
             </p>
           </FadeIn>
           <FadeIn

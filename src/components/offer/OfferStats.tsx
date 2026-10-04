@@ -21,7 +21,7 @@ const statsData: StatItem[] = [
   {
     value: 60,
     suffix: "+",
-    label: "Zagranym koncertów",
+    label: "Zagranych Koncertów",
     sublabel: "Na scenach w Polsce i za granicą",
   },
   {
@@ -33,7 +33,7 @@ const statsData: StatItem[] = [
   {
     value: 20,
     suffix: "+",
-    label: "Miast i festiwali",
+    label: "Lokalizacji",
     sublabel: "Dni miast, amfiteatry i gale",
   },
 ];

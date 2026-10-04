@@ -136,7 +136,7 @@ export default async function LatestUpdates() {
         <div className="mb-20 xl:mb-40">
           <FadeIn>
             <h2 className="font-montserrat text-raisinBlack text-5xl leading-[1.1] font-black tracking-tighter md:text-6xl xl:text-[7rem]">
-              Tu i teraz.
+              Tu i teraz
             </h2>
             <div className="mt-4 flex items-center gap-4 xl:mt-6">
               <div className="bg-arylideYellow h-1 w-16 xl:w-24" />

@@ -31,7 +31,7 @@ export default function Hero() {
       {/* GŁÓWNA TREŚĆ */}
       <div className="relative z-10 flex w-full max-w-6xl flex-col items-center justify-center px-4 pt-12 pb-28 text-center sm:py-0">
         <h1
-          className="animate-fade-in-up font-youngest mb-2 py-4 text-[4.2rem] leading-[0.85] text-white sm:text-[5.5rem] sm:leading-tight md:text-[8rem] lg:mb-4 lg:text-[11.5rem]"
+          className="animate-fade-in-up font-youngest mb-2 py-15 text-[4.2rem] leading-[0.85] text-white sm:text-[5.5rem] sm:leading-tight md:text-[8rem] lg:mb-4 lg:text-[11.5rem]"
           style={{
             textShadow:
               "0 10px 40px rgba(0,0,0,0.8), 0 0 120px rgba(255,255,255,0.15)",
@@ -39,13 +39,6 @@ export default function Hero() {
         >
           Z pasji do muzyki
         </h1>
-
-        <p
-          className="animate-fade-in-up font-montserrat mb-8 max-w-3xl text-sm leading-relaxed font-light tracking-widest whitespace-pre-line text-white/80 opacity-0 sm:text-base md:mb-10 md:text-xl lg:text-2xl"
-          style={{ animationDelay: "150ms" }}
-        >
-          Odkryj z nami maksymalną jakość, maksymalne zaangażowanie oraz maksymalną radość z muzyki.
-        </p>
 
         <div
           className="animate-fade-in-up flex w-full max-w-[20rem] flex-col items-center justify-center gap-4 opacity-0 sm:w-auto sm:max-w-none sm:flex-row sm:gap-8"

@@ -84,22 +84,20 @@ export default async function AboutUsPage() {
           </FadeIn>
           <FadeIn delay="300ms">
             <h1 className="font-montserrat text-5xl leading-[1.05] font-bold tracking-tight text-white md:text-7xl lg:text-[7rem]">
-              Nie gramy dźwięków.
+              Gramy z pasją
               <br />
               <span className="text-philippineSilver font-light italic">
-                Tworzymy
+                od
               </span>{" "}
               <span className="font-youngest text-arylideYellow relative top-4 inline-block -rotate-2 text-6xl font-normal md:text-8xl lg:top-8 lg:text-[10rem]">
-                emocje.
+                2022 roku
               </span>
             </h1>
           </FadeIn>
           <FadeIn delay="500ms" className="mt-12 max-w-2xl lg:mt-24">
             <p className="font-montserrat text-lg leading-relaxed font-light tracking-wide text-white/70">
-              Fundacja Maxime powstała z pasji do muzyki.
-              Jesteśmy kolektywem artystów, wizjonerów i rzemieślników sceny,
-              których łączy jeden cel: dostarczyć publiczności przeżyć, które
-              zostają w pamięci na zawsze.
+              Maxime jest grupą muzyków i wizjonerów łączonych przez jeden cel:
+              dostarczyć publiczności wysokiej jakości wydarzenia kulturalne.
             </p>
           </FadeIn>
         </div>
@@ -142,10 +140,12 @@ export default async function AboutUsPage() {
               </FadeIn>
               <FadeIn delay="400ms">
                 <p className="font-montserrat mb-6 text-base leading-[1.8] font-light text-white/60">
-                  Wierzymy, że muzyka to najpotężniejszy nośnik emocji.
-                   Od doboru repertuaru, przez
-                  wielogodzinne próby, aż po reżyserię światła na scenie – każdy
-                  detal jest projektowany tak, by wywołać dreszcz emocji.
+                  Wierzymy, że muzyka to najszczerszy nośnik emocji. Zaczynając
+                  od doboru repertuaru poprzez wielogodzinne próby, doprowadzamy
+                  nasze wydarzenia do najwyższego poziomu – każdy detal jest
+                  przez nas skrupulatnie przygotowany. Przekraczamy granice
+                  klasycznego postrzegania sztuki nie dając się wciągnąć w
+                  rutynę.
                 </p>
                 <p className="font-montserrat text-base leading-[1.8] font-light text-white/60">
                   Przekraczamy granice klasycznego postrzegania sztuki, łącząc
@@ -215,17 +215,12 @@ export default async function AboutUsPage() {
 
       {/* --- ZAKOŃCZENIE / CTA --- */}
       <section className="relative z-10 flex min-h-[60vh] w-full flex-col items-center justify-center px-6 py-32 text-center">
-        <FadeIn>
-          <span className="font-youngest text-arylideYellow text-4xl md:text-5xl">
-            To dopiero początek.
-          </span>
-        </FadeIn>
         <FadeIn delay="200ms" className="mt-8">
           <h2 className="font-montserrat text-4xl font-bold text-white md:text-6xl">
             Bądź częścią naszej <br className="hidden md:block" />
             kolejnej{" "}
             <span className="text-philippineSilver font-light italic">
-              historii.
+              opowieści
             </span>
           </h2>
         </FadeIn>

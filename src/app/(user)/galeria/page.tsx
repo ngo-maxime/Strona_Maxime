@@ -73,15 +73,14 @@ export default async function GalleryPage() {
             <h1 className="font-montserrat text-5xl leading-[1.05] font-bold tracking-tight text-white md:text-7xl lg:text-[7rem]">
               Zatrzymane <br />
               <span className="font-youngest text-arylideYellow relative top-4 inline-block -rotate-2 text-6xl font-normal md:text-8xl lg:top-8 lg:text-[10rem]">
-                w kadrze.
+                w kadrze
               </span>
             </h1>
           </FadeIn>
           <FadeIn delay="500ms" className="mt-12 max-w-xl lg:mt-24">
             <p className="font-montserrat text-lg leading-relaxed font-light tracking-wide text-white/70">
-              Muzyka to emocje, które znikają wraz z wyciszeniem ostatniego
-              akordu. Fotografia pozwala nam uwiecznić pot, łzy i euforię, które
-              towarzyszą nam na scenie. Odkryj naszą wizualną podróż.
+              Muzyka to ulotna sztuka zanikająca wraz z wyciszeniem ostatniego
+              akordu. Fotografia pozwala nam zatrzymać ten moment w czasie.
             </p>
           </FadeIn>
         </div>
@@ -194,7 +193,8 @@ export default async function GalleryPage() {
             className="mx-auto mt-8 max-w-2xl font-light text-white/60"
           >
             <p>
-              Szukamy kreatywnych osób chętnych do współpracy. Napisz nam, w czym jesteś najlepszy, i zostań z nami na dłużej.
+              Szukamy kreatywnych osób chętnych do współpracy. Napisz nam, w
+              czym jesteś najlepszy, i zostań z nami na dłużej.
             </p>
           </FadeIn>
           <FadeIn delay="600ms" className="mt-12 flex justify-center">
