@@ -145,7 +145,9 @@ export default function CookieBanner() {
     <>
       {/* Ciemne tło maskujące (overlay) */}
       {!isLegalPage && (
-        <div className="fixed inset-0 z-9998 bg-black/60 backdrop-blur-sm transition-opacity" />
+        // Bez backdrop-blur: rozmywanie całego ekranu nad odtwarzanym wideo było
+        // najcięższą operacją graficzną na telefonach. Ciemniejsze tło daje podobny efekt.
+        <div className="fixed inset-0 z-9998 bg-black/70 transition-opacity" />
       )}
 
       {/* Kontener główny banera */}

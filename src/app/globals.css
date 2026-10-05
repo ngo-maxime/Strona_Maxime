@@ -13,7 +13,7 @@
   --font-youngest: var(--font-youngest);
 
   /* Deklaracja klas animacji na poziomie master */
-  --animate-fade-in-up: fade-in-up 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-fade-in-up: fade-in-up 1.4s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-cinematic-zoom: cinematic-zoom 12s cubic-bezier(0.16, 1, 0.3, 1)
     forwards;
   --animate-scroll-line: scroll-line 2s cubic-bezier(0.77, 0, 0.175, 1) infinite;
@@ -23,7 +23,9 @@
 /* Kluczowe animacje (muszą być poza @theme) */
 @keyframes fade-in-up {
   0% {
-    opacity: 0;
+    /* 0.01 zamiast 0: wizualnie identyczne, ale Chrome od pierwszej klatki uznaje tekst
+       za „namalowany” – LCP nie czeka na koniec animacji ani na opóźnienie startu */
+    opacity: 0.01;
     transform: translateY(40px) scale(0.98);
     filter: blur(8px);
   }

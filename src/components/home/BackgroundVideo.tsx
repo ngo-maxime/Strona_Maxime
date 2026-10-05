@@ -28,13 +28,25 @@ export default function BackgroundVideo() {
           : "/bg-video.mp4",
       );
 
-    // Ładujemy wideo dopiero, gdy przeglądarka jest bezczynna – nie konkuruje z LCP
-    if ("requestIdleCallback" in window) {
-      const id = window.requestIdleCallback(load, { timeout: 2000 });
-      return () => window.cancelIdleCallback(id);
-    }
-    const t = setTimeout(load, 300);
-    return () => clearTimeout(t);
+    // Wideo startuje dopiero po pełnym załadowaniu strony i w chwili bezczynności
+    // przeglądarki – nie konkuruje z wyświetleniem treści (LCP) ani z interakcją.
+    let idleId = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const schedule = () => {
+      if ("requestIdleCallback" in window) {
+        idleId = window.requestIdleCallback(load, { timeout: 3000 });
+      } else {
+        timer = setTimeout(load, 1000);
+      }
+    };
+    if (document.readyState === "complete") schedule();
+    else window.addEventListener("load", schedule, { once: true });
+
+    return () => {
+      window.removeEventListener("load", schedule);
+      if (idleId) window.cancelIdleCallback(idleId);
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   // Pauza poza ekranem – oszczędza CPU i baterię podczas przewijania strony

@@ -1,5 +1,14 @@
 # Zmiany
 
+## Etap 6 – wydajność mobilna (po pomiarze Lighthouse na produkcji)
+
+- CSS ponownie wbudowany w HTML (`inlineCss`): na telefonie osobny plik blokował stronę do ~1,7 s.
+- Animacja wejścia Hero startuje od 1% krycia (wizualnie bez zmian) z `animation-fill-mode: both` –
+  LCP nie czeka na opóźnienie i koniec animacji.
+- Nakładka Hero bez `mix-blend-multiply` (identyczne przyciemnienie, bez przeliczania przy każdej klatce wideo).
+- Tło banera cookies bez `backdrop-blur` nad wideo (ciemniejsze o 10 pp.).
+- Wideo w tle startuje dopiero po pełnym załadowaniu strony.
+
 ## Etap 5 – sygnet i grafiki
 
 - Nowy kwadratowy sygnet „M” (kolor marki #EFCB6F): `icon.svg` (z 10 KB metadanych → 1,7 KB),

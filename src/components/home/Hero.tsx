@@ -15,7 +15,9 @@ export default function Hero() {
         {/* Dynamiczne wideo - ładuje się po stronie klienta */}
         <BackgroundVideo />
 
-        <div className="bg-raisinBlack/30 absolute inset-0 mix-blend-multiply" />
+        {/* Odpowiednik dawnego „bg-raisinBlack/30 mix-blend-multiply” (przyciemnienie ×0,75)
+            bez trybu mieszania, który telefon przeliczał przy każdej klatce wideo */}
+        <div className="absolute inset-0 bg-black/25" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(38,38,38,0.85)_100%)]" />
         <div className="from-raisinBlack absolute inset-0 bg-linear-to-t via-transparent to-transparent opacity-95" />
       </div>

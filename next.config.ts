@@ -43,10 +43,10 @@ const nextConfig: NextConfig = {
   // a Lighthouse, czytniki ekranu i podglądy linków (Messenger, LinkedIn) widzą tytuł od razu.
   htmlLimitedBots: /.*/,
   experimental: {
-    // inlineCss celowo WYŁĄCZONE: Next.js wstawia CSS do HTML dwukrotnie (<style> + dane RSC),
-    // co dokłada ~30 KB gzip do KAŻDEJ podstrony. Osobny plik CSS (15 KB) pobiera się raz
-    // i jest cache'owany dla całej witryny – w praktyce szybciej, choć Lighthouse zgłosi
-    // „render-blocking request” (~1 zapytanie przy pierwszej wizycie).
+    // CSS wbudowany w HTML. Pomiar z produkcji (Lighthouse, telefon): osobny plik CSS
+    // blokował wyświetlenie strony do ~1,7 s. Next.js dubluje CSS w danych RSC (+15 KB gzip),
+    // ale na wolnych łączach brak dodatkowego zapytania wygrywa o ~1 s LCP.
+    inlineCss: true,
     // Mniejsze paczki JS – importujemy tylko używane części bibliotek
     optimizePackageImports: ["@portabletext/react"],
   },
