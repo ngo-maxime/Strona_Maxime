@@ -79,5 +79,106 @@ export const siteSettingsType = defineType({
         }),
       ],
     }),
+    defineField({
+      name: "media",
+      title: "Zdjęcia sekcji „O nas”",
+      description:
+        "Zalecane: JPG, dłuższy bok 2000–3000 px. Punkt kadrowania (hotspot) wyznacza, co zostaje w kadrze.",
+      type: "object",
+      options: { collapsible: true },
+      fields: [
+        defineField({
+          name: "homeAboutImage",
+          title: "Strona główna – sekcja „Sztuka, która łączy pokolenia”",
+          type: "image",
+          options: { hotspot: true },
+          fields: [
+            defineField({ name: "alt", title: "Opis zdjęcia", type: "string" }),
+          ],
+        }),
+        defineField({
+          name: "aboutPageImage",
+          title: "Podstrona „O nas” – zdjęcie przy historii",
+          type: "image",
+          options: { hotspot: true },
+          fields: [
+            defineField({ name: "alt", title: "Opis zdjęcia", type: "string" }),
+          ],
+        }),
+      ],
+    }),
+    defineField({
+      name: "stats",
+      title: "Liczby na stronie",
+      description:
+        "Wyświetlane na stronie głównej i w Ofercie. „Lata na scenie” liczą się automatycznie od 2022 roku.",
+      type: "object",
+      options: { collapsible: true },
+      fields: [
+        defineField({
+          name: "events",
+          title: "Wydarzenia (strona główna)",
+          type: "number",
+          initialValue: 50,
+          validation: (rule) => rule.min(0).integer(),
+        }),
+        defineField({
+          name: "concerts",
+          title: "Zagrane koncerty (Oferta)",
+          type: "number",
+          initialValue: 60,
+          validation: (rule) => rule.min(0).integer(),
+        }),
+        defineField({
+          name: "members",
+          title: "Członkowie orkiestry (Oferta)",
+          type: "number",
+          initialValue: 45,
+          validation: (rule) => rule.min(0).integer(),
+        }),
+        defineField({
+          name: "locations",
+          title: "Lokalizacje (Oferta)",
+          type: "number",
+          initialValue: 20,
+          validation: (rule) => rule.min(0).integer(),
+        }),
+      ],
+    }),
+    defineField({
+      name: "legal",
+      title: "Dane rejestrowe fundacji",
+      description:
+        "Pojawiają się w polityce prywatności, regulaminie i danych dla Google. Puste pola są ukrywane.",
+      type: "object",
+      options: { collapsible: true },
+      fields: [
+        defineField({ name: "krs", title: "KRS", type: "string" }),
+        defineField({ name: "nip", title: "NIP", type: "string" }),
+        defineField({ name: "regon", title: "REGON", type: "string" }),
+      ],
+    }),
+    defineField({
+      name: "documents",
+      title: "Dokumenty do pobrania (PDF)",
+      description:
+        "Po dodaniu pliku na stronie pojawi się przycisk „Pobierz pełną wersję prawną (PDF)”.",
+      type: "object",
+      options: { collapsible: true },
+      fields: [
+        defineField({
+          name: "privacyPdf",
+          title: "Polityka prywatności (PDF)",
+          type: "file",
+          options: { accept: "application/pdf" },
+        }),
+        defineField({
+          name: "termsPdf",
+          title: "Regulamin (PDF)",
+          type: "file",
+          options: { accept: "application/pdf" },
+        }),
+      ],
+    }),
   ],
 });

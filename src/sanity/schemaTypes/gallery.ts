@@ -52,13 +52,33 @@ export const galleryType = defineType({
       title: "Zdjęcie okładkowe",
       type: "image",
       options: { hotspot: true },
+      fields: [
+        defineField({
+          name: "alt",
+          type: "string",
+          title: "Opis zdjęcia (tekst alternatywny)",
+        }),
+      ],
       validation: (rule) => rule.required(),
     }),
     defineField({
       name: "photos",
       title: "Zdjęcia w galerii",
       type: "array",
-      of: [{ type: "image", options: { hotspot: true } }],
+      of: [
+        {
+          type: "image",
+          options: { hotspot: true },
+          // Opcjonalny opis zdjęcia – dostępność (czytniki ekranu) i SEO grafiki
+          fields: [
+            defineField({
+              name: "alt",
+              type: "string",
+              title: "Opis zdjęcia (tekst alternatywny)",
+            }),
+          ],
+        },
+      ],
       validation: (rule) => rule.required(),
     }),
   ],

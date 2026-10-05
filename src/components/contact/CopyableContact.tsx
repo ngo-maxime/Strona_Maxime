@@ -13,16 +13,32 @@ export default function CopyableContact({
 }: CopyableContactProps) {
   const [isCopied, setIsCopied] = useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(value);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      // Fallback dla starszych przeglądarek / kontekstu bez HTTPS
+      const ta = document.createElement("textarea");
+      ta.value = value;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2500);
   };
+
+  if (!value) return null;
 
   return (
     <button
       type="button"
       onClick={handleCopy}
+      aria-label={`Kopiuj ${isPhone ? "numer telefonu" : "adres e-mail"}: ${value}`}
       className="hover:text-arylideYellow relative flex w-full items-center justify-between gap-4 text-left transition-colors duration-500"
     >
       <span
@@ -35,7 +51,10 @@ export default function CopyableContact({
         {value}
       </span>
 
-      <div className="h-8 shrink-0 overflow-hidden">
+      <span className="sr-only" aria-live="polite">
+        {isCopied ? "Skopiowano!" : ""}
+      </span>
+      <div aria-hidden="true" className="h-8 shrink-0 overflow-hidden">
         <div
           className={`flex flex-col transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
             isCopied ? "-translate-y-8" : "translate-y-0"
@@ -47,6 +66,7 @@ export default function CopyableContact({
               Kopiuj
             </span>
             <svg
+              aria-hidden="true"
               className="h-6 w-6"
               fill="none"
               viewBox="0 0 24 24"
@@ -66,6 +86,7 @@ export default function CopyableContact({
               Skopiowano!
             </span>
             <svg
+              aria-hidden="true"
               className="h-5 w-5"
               fill="none"
               viewBox="0 0 24 24"

@@ -1,10 +1,25 @@
-import { PortableText } from "@portabletext/react";
-import Image from "next/image";
+import { PortableText, type PortableTextComponents } from "@portabletext/react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { defineQuery } from "next-sanity";
+import JsonLd from "@/components/seo/JsonLd";
+import Image from "@/components/ui/CmsImage";
 import FadeIn from "@/components/ui/FadeIn";
-import { sanityFetch } from "@/sanity/lib/live";
+import PortableLink from "@/components/ui/PortableLink";
+import { getWarsawParts, MONTHS_GENITIVE, MONTHS_NOMINATIVE } from "@/lib/date";
+import {
+  breadcrumbJsonLd,
+  ORGANIZATION,
+  ORGANIZATION_ID,
+  pageMetadata,
+  SITE_NAME,
+  SITE_URL,
+  sanityOgImage,
+  truncate,
+} from "@/lib/site";
+import { client } from "@/sanity/lib/client";
+import { sanityFetch } from "@/sanity/lib/fetch";
 
 const EVENT_BY_SLUG_QUERY = defineQuery(`
   *[_type == "event" && slug.current == $slug][0] {
@@ -26,26 +41,63 @@ const EVENT_BY_SLUG_QUERY = defineQuery(`
   }
 `);
 
-const monthsPl = [
-  "Styczeń",
-  "Luty",
-  "Marzec",
-  "Kwiecień",
-  "Maj",
-  "Czerwiec",
-  "Lipiec",
-  "Sierpień",
-  "Wrzesień",
-  "Październik",
-  "Listopad",
-  "Grudzień",
-];
+const EVENT_META_QUERY = defineQuery(`
+  *[_type == "event" && slug.current == $slug][0] {
+    title,
+    subtitle,
+    location,
+    "image": image.asset->url,
+    date,
+    "plain": pt::text(description)
+  }
+`);
 
-export default async function EventDetailPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+const EVENT_SLUGS_QUERY = defineQuery(
+  `*[_type == "event" && defined(slug.current)].slug.current`,
+);
+
+const portableTextComponents: PortableTextComponents = {
+  marks: { link: PortableLink },
+};
+
+type Props = { params: Promise<{ slug: string }> };
+
+// Prerender znanych wydarzeń przy buildzie (szybszy TTFB); nowe renderują się na żądanie
+export async function generateStaticParams() {
+  try {
+    const slugs = await client.fetch<string[]>(EVENT_SLUGS_QUERY);
+    return slugs.map((slug) => ({ slug }));
+  } catch {
+    return [];
+  }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const { data } = await sanityFetch({
+    query: EVENT_META_QUERY,
+    params: { slug },
+  });
+  if (!data) return {};
+
+  // Opis zawsze zawiera datę i miejsce (ważne dla wyszukiwań typu „koncert + miasto”)
+  const w = data.date ? getWarsawParts(data.date) : null;
+  const when = w
+    ? `${w.day} ${MONTHS_GENITIVE[w.monthIndex].toLowerCase()} ${w.year}`
+    : "";
+  const lead = [data.title, when, data.location].filter(Boolean).join(" – ");
+
+  return pageMetadata({
+    title: data.title,
+    description: truncate(
+      [lead, data.subtitle, data.plain].filter(Boolean).join(". "),
+    ),
+    path: `/wydarzenia/${slug}`,
+    image: sanityOgImage(data.image),
+  });
+}
+
+export default async function EventDetailPage({ params }: Props) {
   const resolvedParams = await params;
 
   const { data: eventRaw } = await sanityFetch({
@@ -57,13 +109,70 @@ export default async function EventDetailPage({
     notFound();
   }
 
-  const d = new Date(eventRaw.date);
+  const d = eventRaw.date ? new Date(eventRaw.date) : new Date();
   const isPastEvent = d < new Date(); // Sprawdzamy czy koncert już minął
 
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = monthsPl[d.getMonth()];
-  const year = String(d.getFullYear());
-  const time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  // Data i godzina w strefie Europe/Warsaw (serwer działa w UTC)
+  const w = getWarsawParts(d);
+  const day = String(w.day).padStart(2, "0");
+  const month = MONTHS_NOMINATIVE[w.monthIndex];
+  const year = String(w.year);
+  const time = `${w.hours}:${w.minutes}`;
+
+  // Dane strukturalne wydarzenia – szansa na wyświetlenie w Google jako „Wydarzenie”
+  const eventUrl = `${SITE_URL}/wydarzenia/${resolvedParams.slug}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "MusicEvent",
+    name: eventRaw.title,
+    startDate: eventRaw.date,
+    eventStatus: "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    url: eventUrl,
+    ...(eventRaw.image && { image: [eventRaw.image] }),
+    description: eventRaw.subtitle || eventRaw.title,
+    location: {
+      "@type": "Place",
+      name: eventRaw.location || SITE_NAME,
+      address: eventRaw.address || {
+        "@type": "PostalAddress",
+        addressLocality: ORGANIZATION.address.city,
+        addressCountry: ORGANIZATION.address.country,
+      },
+    },
+    organizer: { "@id": ORGANIZATION_ID },
+    performer: [
+      { "@type": "MusicGroup", name: SITE_NAME, url: SITE_URL },
+      ...(eventRaw.guestArtists ?? [])
+        .filter((a: { name?: string }) => a?.name)
+        .map((a: { name: string }) => ({ "@type": "Person", name: a.name })),
+    ],
+    ...(eventRaw.hasTicketLink &&
+      eventRaw.ticketLink && {
+        offers: {
+          "@type": "Offer",
+          url: eventRaw.ticketLink,
+          availability: eventRaw.hasTicketsAvailable
+            ? "https://schema.org/InStock"
+            : "https://schema.org/SoldOut",
+          ...(eventRaw.ticketType === "darmowe" && {
+            price: 0,
+            priceCurrency: "PLN",
+          }),
+          // „od 50 PLN” / „120 zł” → 50 / 120
+          ...(eventRaw.ticketType === "platne" &&
+            /\d/.test(eventRaw.ticketPrice ?? "") && {
+              price: Number(
+                String(eventRaw.ticketPrice)
+                  .match(/\d+(?:[.,]\d+)?/)?.[0]
+                  .replace(",", "."),
+              ),
+              priceCurrency: "PLN",
+            }),
+        },
+      }),
+    ...(eventRaw.ticketType === "darmowe" && { isAccessibleForFree: true }),
+  };
 
   const hasLink = eventRaw.hasTicketLink && eventRaw.ticketLink;
 
@@ -100,7 +209,7 @@ export default async function EventDetailPage({
           <a
             href={eventRaw.ticketLink}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="group bg-arylideYellow font-montserrat text-raisinBlack relative flex w-full items-center justify-center overflow-hidden rounded-full px-4 py-4 text-center text-[0.65rem] leading-snug font-bold tracking-widest uppercase transition-all duration-700 hover:scale-[1.02] hover:shadow-[0_0_30px_-10px_rgba(239,203,111,0.6)] sm:px-8 sm:py-5 sm:text-xs sm:tracking-[0.2em]"
           >
             <span className="relative z-10">Wybierz sobie miejsce</span>
@@ -123,7 +232,7 @@ export default async function EventDetailPage({
           <a
             href={eventRaw.ticketLink}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="group bg-oxfordBlue font-montserrat relative flex w-full items-center justify-center overflow-hidden rounded-full px-4 py-4 text-center text-[0.65rem] leading-snug font-bold tracking-widest text-white uppercase transition-all duration-700 hover:scale-[1.02] hover:shadow-[0_0_30px_-10px_rgba(0,28,72,0.6)] sm:px-8 sm:py-5 sm:text-xs sm:tracking-[0.2em]"
           >
             <span className="group-hover:text-arylideYellow relative z-10 transition-colors">
@@ -154,14 +263,22 @@ export default async function EventDetailPage({
   };
 
   return (
-    <main className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full">
+    <div className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full">
+      <JsonLd data={jsonLd} />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Wydarzenia", path: "/wydarzenia" },
+          { name: eventRaw.title, path: `/wydarzenia/${resolvedParams.slug}` },
+        ])}
+      />
       <section className="relative flex min-h-[85vh] w-full flex-col justify-end overflow-hidden pt-32 pb-12 lg:pb-24">
         <div className="absolute inset-0 z-0">
           <Image
             src={eventRaw.image || "/video-poster.webp"}
             alt={eventRaw.title}
             fill
-            priority
+            preload
+            fetchPriority="high"
             sizes="100vw"
             className="object-cover opacity-60 transition-transform duration-2000 ease-out hover:scale-105"
           />
@@ -169,10 +286,15 @@ export default async function EventDetailPage({
           <div className="from-raisinBlack absolute inset-0 bg-linear-to-r via-transparent to-transparent opacity-80" />
         </div>
 
-        <div className="pointer-events-none absolute bottom-0 -left-10 z-0 opacity-20 mix-blend-overlay select-none">
-          <span className="font-montserrat text-[30vw] leading-none font-black text-white lg:text-[25vw]">
-            {day}
-          </span>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-0 -left-10 z-0 opacity-20 mix-blend-overlay select-none"
+        >
+          <span
+            aria-hidden="true"
+            data-deco={day}
+            className="font-montserrat text-[30vw] leading-none font-black text-white lg:text-[25vw] before:content-[attr(data-deco)]"
+          />
         </div>
 
         <div className="relative z-10 mx-auto w-full max-w-7xl px-6 lg:px-12">
@@ -239,12 +361,14 @@ export default async function EventDetailPage({
                     <span className="font-montserrat mb-2 block text-[0.6rem] font-bold tracking-[0.3em] text-white/40 uppercase">
                       Kiedy
                     </span>
-                    <p className="font-montserrat text-xl font-medium text-white">
-                      {day} {month} {year}
-                    </p>
-                    <p className="font-youngest text-arylideYellow text-2xl">
-                      Godz. {time}
-                    </p>
+                    <time dateTime={eventRaw.date}>
+                      <span className="font-montserrat block text-xl font-medium text-white">
+                        {day} {month} {year}
+                      </span>
+                      <span className="font-youngest text-arylideYellow block text-2xl">
+                        Godz. {time}
+                      </span>
+                    </time>
                   </div>
                   <div>
                     <span className="font-montserrat mb-2 block text-[0.6rem] font-bold tracking-[0.3em] text-white/40 uppercase">
@@ -286,7 +410,10 @@ export default async function EventDetailPage({
               <FadeIn delay="300ms">
                 <div className="prose prose-invert prose-lg font-montserrat marker:text-arylideYellow prose-strong:font-bold prose-strong:text-white max-w-none leading-relaxed font-light tracking-wide text-white/70">
                   {eventRaw.description ? (
-                    <PortableText value={eventRaw.description} />
+                    <PortableText
+                      value={eventRaw.description}
+                      components={portableTextComponents}
+                    />
                   ) : (
                     <p>Szczegóły wkrótce...</p>
                   )}
@@ -295,9 +422,9 @@ export default async function EventDetailPage({
 
               {eventRaw.program && eventRaw.program.length > 0 && (
                 <FadeIn delay="400ms">
-                  <h3 className="font-youngest mb-8 text-4xl text-white">
+                  <h2 className="font-youngest mb-8 text-4xl text-white">
                     Repertuar
-                  </h3>
+                  </h2>
                   <ul className="flex flex-col">
                     {eventRaw.program.map((item: string, index: number) => (
                       <li
@@ -321,23 +448,25 @@ export default async function EventDetailPage({
 
               {eventRaw.guestArtists && eventRaw.guestArtists.length > 0 && (
                 <FadeIn delay="500ms">
-                  <h3 className="font-youngest mb-8 text-4xl text-white">
+                  <h2 className="font-youngest mb-8 text-4xl text-white">
                     Gościnnie wystąpią
-                  </h3>
+                  </h2>
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    {eventRaw.guestArtists.map((artist: any) => (
-                      <div
-                        key={artist.name}
-                        className="group flex flex-col rounded-2xl bg-[#1f1f1f] p-6 transition-all duration-500 hover:-translate-y-1 hover:bg-[#2a2a2a]"
-                      >
-                        <span className="font-montserrat group-hover:text-arylideYellow text-xl font-bold text-white transition-colors">
-                          {artist.name}
-                        </span>
-                        <span className="font-montserrat mt-1 text-xs font-medium tracking-widest text-white/40 uppercase">
-                          {artist.role}
-                        </span>
-                      </div>
-                    ))}
+                    {eventRaw.guestArtists.map(
+                      (artist: { name: string; role?: string }) => (
+                        <div
+                          key={artist.name}
+                          className="group flex flex-col rounded-2xl bg-[#1f1f1f] p-6 transition-all duration-500 hover:-translate-y-1 hover:bg-[#2a2a2a]"
+                        >
+                          <span className="font-montserrat group-hover:text-arylideYellow text-xl font-bold text-white transition-colors">
+                            {artist.name}
+                          </span>
+                          <span className="font-montserrat mt-1 text-xs font-medium tracking-widest text-white/40 uppercase">
+                            {artist.role}
+                          </span>
+                        </div>
+                      ),
+                    )}
                   </div>
                 </FadeIn>
               )}
@@ -348,9 +477,11 @@ export default async function EventDetailPage({
 
       <section className="bg-oxfordBlue relative z-10 w-full overflow-hidden py-24 text-center lg:py-32">
         <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5">
-          <span className="font-youngest text-[20vw] whitespace-nowrap text-white">
-            Maxime
-          </span>
+          <span
+            aria-hidden="true"
+            data-deco="Maxime"
+            className="font-youngest text-[20vw] whitespace-nowrap text-white before:content-[attr(data-deco)]"
+          />
         </div>
         <div className="relative z-10 mx-auto max-w-3xl px-6">
           <FadeIn>
@@ -372,6 +503,6 @@ export default async function EventDetailPage({
           </FadeIn>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

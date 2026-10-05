@@ -1,4 +1,4 @@
-export const copyrightText = `© ${new Date().getFullYear()} Stowarzyszenie Maxime. Wszelkie prawa zastrzeżone.`;
+export const copyrightText = `© ${new Date().getFullYear()} Fundacja Maxime. Wszelkie prawa zastrzeżone.`;
 
 export const mainLinks = [
   { name: "Strona główna", path: "/" },

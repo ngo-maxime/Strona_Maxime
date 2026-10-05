@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import Image from "@/components/ui/CmsImage";
 import FadeIn from "@/components/ui/FadeIn";
 
 export interface EventProps {
@@ -33,79 +33,198 @@ const allMonths = [
   "Grudzień",
 ];
 
+type FiltersProps = {
+  years: string[];
+  activeYear: string | null;
+  onYear: (year: string | null) => void;
+  activeMonth: string;
+  onMonth: (month: string) => void;
+  monthsWithEvents: Set<string>;
+  compact?: boolean;
+};
+
+// Filtry: dyskretny wybór roku (kliknięcie aktywnego roku = wszystkie lata) + miesiące.
+// Miesiące bez wydarzeń w wybranym roku są przygaszone i nieaktywne.
+function Filters({
+  years,
+  activeYear,
+  onYear,
+  activeMonth,
+  onMonth,
+  monthsWithEvents,
+  compact = false,
+}: FiltersProps) {
+  return (
+    <>
+      {years.length > 1 && (
+        <ul
+          aria-label="Filtr lat"
+          className={`flex flex-wrap gap-x-4 gap-y-2 ${compact ? "mb-3" : "mb-8"}`}
+        >
+          {years.map((year) => {
+            const active = activeYear === year;
+            return (
+              <li key={year}>
+                <button
+                  type="button"
+                  onClick={() => onYear(active ? null : year)}
+                  aria-pressed={active}
+                  className={`font-montserrat rounded-full border px-3 py-1 text-[0.65rem] tracking-[0.2em] transition-colors duration-300 ${
+                    active
+                      ? "border-oxfordBlue bg-oxfordBlue font-bold text-white"
+                      : "border-raisinBlack/15 text-raisinBlack/50 hover:border-raisinBlack/40 hover:text-raisinBlack font-medium"
+                  }`}
+                >
+                  {year}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <ul
+        aria-label="Filtr miesięcy"
+        className={`hide-scrollbar flex overflow-x-auto ${
+          compact
+            ? "pb-3"
+            : "pt-2 pb-6 lg:flex-col lg:gap-4 lg:overflow-visible lg:pb-0"
+        }`}
+      >
+        {["Wszystkie", ...allMonths].map((month) => {
+          const active = activeMonth === month;
+          const disabled =
+            month !== "Wszystkie" && !monthsWithEvents.has(month);
+          return (
+            <li key={month} className="mr-6 shrink-0 lg:mr-0">
+              <button
+                type="button"
+                onClick={() => onMonth(month)}
+                aria-pressed={active}
+                disabled={disabled}
+                className="group flex flex-col items-start disabled:cursor-default"
+              >
+                <span
+                  className={`font-montserrat text-sm tracking-widest uppercase transition-colors duration-300 ${
+                    active
+                      ? "text-oxfordBlue font-bold"
+                      : disabled
+                        ? "text-raisinBlack/15 font-medium"
+                        : "text-raisinBlack/40 group-hover:text-raisinBlack font-medium"
+                  }`}
+                >
+                  {month}
+                </span>
+                <div
+                  className={`bg-oxfordBlue mt-2 h-0.5 transition-all duration-500 ${
+                    active ? "w-full" : disabled ? "w-0" : "w-0 group-hover:w-6"
+                  }`}
+                />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
 export default function EventsList({
   eventsData,
 }: {
   eventsData: EventProps[];
 }) {
   const [activeMonth, setActiveMonth] = useState("Wszystkie");
+  const [activeYear, setActiveYear] = useState<string | null>(null);
 
-  // Filtrujemy według miesiąca
-  const filteredEvents =
-    activeMonth === "Wszystkie"
-      ? eventsData
-      : eventsData.filter((event) => event.month === activeMonth);
+  // Lata obecne w danych (od najnowszego)
+  const years = useMemo(
+    () =>
+      Array.from(new Set(eventsData.map((e) => e.year))).sort(
+        (a, b) => Number(b) - Number(a),
+      ),
+    [eventsData],
+  );
 
-  // ZMIENIONO: Rozdzielamy wydarzenia na nadchodzące i minione z dedykowanym sortowaniem
+  // Miesiące, w których są wydarzenia (w wybranym roku lub we wszystkich latach)
+  const monthsWithEvents = useMemo(
+    () =>
+      new Set(
+        eventsData
+          .filter((e) => !activeYear || e.year === activeYear)
+          .map((e) => e.month),
+      ),
+    [eventsData, activeYear],
+  );
+
+  const handleYear = (year: string | null) => {
+    setActiveYear(year);
+    // Wybrany miesiąc nie istnieje w nowym roku → pokazujemy cały rok
+    const stillValid = eventsData.some(
+      (e) => (!year || e.year === year) && e.month === activeMonth,
+    );
+    if (activeMonth !== "Wszystkie" && !stillValid) setActiveMonth("Wszystkie");
+  };
+
+  const handleMonth = (month: string) => {
+    setActiveMonth(month);
+    // Po zmianie filtra na telefonie wracamy na początek listy (pasek filtrów jest przyklejony)
+    const list = document.getElementById("lista-wydarzen");
+    if (list && list.getBoundingClientRect().top < 0) {
+      list.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const filteredEvents = eventsData.filter(
+    (event) =>
+      (!activeYear || event.year === activeYear) &&
+      (activeMonth === "Wszystkie" || event.month === activeMonth),
+  );
+
+  // Nadchodzące: najbliższe pierwsze. Archiwum: ostatnie minione pierwsze.
   const upcomingEvents = filteredEvents
     .filter((event) => !event.isPast)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); // Najbliższe jako pierwsze
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const pastEvents = filteredEvents
     .filter((event) => event.isPast)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Ostatnie minione jako pierwsze
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const filterProps = {
+    years,
+    activeYear,
+    onYear: handleYear,
+    activeMonth,
+    onMonth: handleMonth,
+    monthsWithEvents,
+  };
 
   return (
-    <div className="grid grid-cols-1 items-start gap-16 lg:grid-cols-12 lg:gap-8">
-      {/* --- MENU FILTROWANIA --- */}
-      <div className="relative lg:col-span-3">
+    <div className="grid grid-cols-1 gap-16 lg:grid-cols-12 lg:gap-8">
+      {/* --- MENU FILTROWANIA (komputer: przyklejone do ekranu podczas przewijania) --- */}
+      {/* self-stretch: kolumna ma wysokość listy, więc element sticky ma po czym „jechać” */}
+      <div className="relative lg:col-span-3 lg:self-stretch">
         <div className="lg:sticky lg:top-40">
           <FadeIn>
             <h2 className="font-youngest text-raisinBlack mb-8 text-5xl">
               Wybierz miesiąc
             </h2>
-            <ul className="hide-scrollbar flex overflow-x-auto pt-2 pb-6 lg:flex-col lg:gap-4 lg:overflow-visible lg:pb-0">
-              <li className="mr-6 shrink-0 lg:mr-0">
-                <button
-                  type="button"
-                  onClick={() => setActiveMonth("Wszystkie")}
-                  className="group flex flex-col items-start"
-                >
-                  <span
-                    className={`font-montserrat text-sm tracking-widest uppercase transition-colors duration-300 ${activeMonth === "Wszystkie" ? "text-oxfordBlue font-bold" : "text-raisinBlack/40 group-hover:text-raisinBlack font-medium"}`}
-                  >
-                    Wszystkie
-                  </span>
-                  <div
-                    className={`bg-oxfordBlue mt-2 h-0.5 transition-all duration-500 ${activeMonth === "Wszystkie" ? "w-full" : "w-0 group-hover:w-6"}`}
-                  />
-                </button>
-              </li>
-              {allMonths.map((month) => (
-                <li key={month} className="mr-6 shrink-0 lg:mr-0">
-                  <button
-                    type="button"
-                    onClick={() => setActiveMonth(month)}
-                    className="group flex flex-col items-start"
-                  >
-                    <span
-                      className={`font-montserrat text-sm tracking-widest uppercase transition-colors duration-300 ${activeMonth === month ? "text-oxfordBlue font-bold" : "text-raisinBlack/40 group-hover:text-raisinBlack font-medium"}`}
-                    >
-                      {month}
-                    </span>
-                    <div
-                      className={`bg-oxfordBlue mt-2 h-0.5 transition-all duration-500 ${activeMonth === month ? "w-full" : "w-0 group-hover:w-6"}`}
-                    />
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <div className="hidden lg:block">
+              <Filters {...filterProps} />
+            </div>
           </FadeIn>
         </div>
       </div>
 
       {/* --- WYNIKI FILTROWANIA --- */}
-      <div className="lg:col-span-9">
+      <div
+        id="lista-wydarzen"
+        className="-mt-12 scroll-mt-28 lg:col-span-9 lg:mt-0"
+      >
+        {/* --- FILTRY NA TELEFONIE: przyklejony pasek pod menu --- */}
+        <div className="sticky top-24 z-30 -mx-6 mb-8 border-raisinBlack/10 border-b bg-[#F4F4F5]/95 px-6 pt-3 backdrop-blur-md lg:hidden">
+          <Filters {...filterProps} compact />
+        </div>
+
         <div className="flex flex-col">
           {/* =================================================== */}
           {/* --- SEKCE 1: NADCHODZĄCE WYDARZENIA --- */}
@@ -114,7 +233,10 @@ export default function EventsList({
             <div className="mb-8">
               <FadeIn>
                 <div className="mb-6 flex items-center gap-3">
-                  <span className="relative flex h-2.5 w-2.5">
+                  <span
+                    aria-hidden="true"
+                    className="relative flex h-2.5 w-2.5"
+                  >
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
                   </span>
@@ -133,7 +255,7 @@ export default function EventsList({
                       <div className="pointer-events-none absolute top-1/2 right-[5%] z-10 h-32 w-24 translate-x-8 -translate-y-1/2 scale-50 rotate-12 overflow-hidden rounded-md opacity-0 shadow-2xl transition-all duration-600 ease-out group-hover:translate-x-0 group-hover:scale-100 group-hover:-rotate-3 group-hover:opacity-100 md:h-40 md:w-28 lg:right-[20%]">
                         <Image
                           src={event.image || "/video-poster.webp"}
-                          alt={`Plakat ${event.title}`}
+                          alt=""
                           fill
                           className="object-cover"
                           sizes="(max-width: 768px) 96px, 112px"
@@ -167,10 +289,12 @@ export default function EventsList({
                         <div className="flex w-full items-center md:w-[30%] md:justify-end lg:w-1/4">
                           <Link
                             href={`/wydarzenia/${event.id}`}
+                            aria-label={`Zobacz więcej: ${event.title}`}
                             className="group/btn bg-raisinBlack font-montserrat group-hover:bg-arylideYellow group-hover:text-oxfordBlue relative flex w-full items-center justify-center gap-3 rounded-full px-8 py-4 text-[0.65rem] font-bold tracking-[0.2em] text-white uppercase transition-all duration-500 hover:scale-105 md:inline-flex md:w-auto"
                           >
                             Zobacz więcej
                             <svg
+                              aria-hidden="true"
                               className="h-3 w-3 transition-transform duration-300 group-hover/btn:translate-x-1"
                               fill="none"
                               viewBox="0 0 24 24"
@@ -197,10 +321,19 @@ export default function EventsList({
           {/* --- SEKCE 2: MINIONE WYDARZENIA (ARCHIWUM) --- */}
           {/* =================================================== */}
           {pastEvents.length > 0 && (
-            <div className={upcomingEvents.length > 0 ? "mt-16" : ""}>
+            <div
+              className={
+                upcomingEvents.length > 0
+                  ? "border-raisinBlack/15 mt-24 border-t-2 border-dashed pt-12 lg:mt-32 lg:pt-16"
+                  : ""
+              }
+            >
               <FadeIn>
                 <div className="mb-6 flex items-center gap-2">
-                  <span className="bg-raisinBlack/30 h-2 w-2 rounded-full"></span>
+                  <span
+                    aria-hidden="true"
+                    className="bg-raisinBlack/30 h-2 w-2 rounded-full"
+                  />
                   <h3 className="font-montserrat text-raisinBlack/40 text-xs font-bold tracking-[0.2em] uppercase">
                     Archiwum koncertów ({pastEvents.length})
                   </h3>
@@ -219,7 +352,7 @@ export default function EventsList({
                       <div className="pointer-events-none absolute top-1/2 right-[5%] z-10 h-32 w-24 translate-x-8 -translate-y-1/2 scale-50 rotate-12 overflow-hidden rounded-md opacity-0 shadow-2xl transition-all duration-600 ease-out group-hover:translate-x-0 group-hover:scale-100 group-hover:-rotate-3 group-hover:opacity-100 md:h-40 md:w-28 lg:right-[20%]">
                         <Image
                           src={event.image || "/video-poster.webp"}
-                          alt={`Plakat ${event.title}`}
+                          alt=""
                           fill
                           className="object-cover grayscale transition-all duration-500 group-hover:grayscale-0"
                           sizes="(max-width: 768px) 96px, 112px"
@@ -254,10 +387,12 @@ export default function EventsList({
                           {/* Subtelniejszy przycisk w ramce dla sekcji archiwalnej */}
                           <Link
                             href={`/wydarzenia/${event.id}`}
+                            aria-label={`Szczegóły: ${event.title}`}
                             className="font-montserrat border-raisinBlack/20 hover:bg-raisinBlack text-raisinBlack/60 relative flex w-full items-center justify-center gap-3 rounded-full border px-8 py-4 text-[0.65rem] font-bold tracking-[0.2em] uppercase transition-all duration-300 hover:text-white md:inline-flex md:w-auto"
                           >
                             Szczegóły
                             <svg
+                              aria-hidden="true"
                               className="h-3 w-3"
                               fill="none"
                               viewBox="0 0 24 24"

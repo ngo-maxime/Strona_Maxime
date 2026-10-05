@@ -1,24 +1,16 @@
 // BRAK "use client"! To znowu jest super-szybki Server Component
 
 import Link from "next/link";
-import Image from "next/image";
-import BackgroundVideo from "./BackgroundVideo"; // <-- Importujemy nasz nowy mały komponent
+import BackgroundVideo from "./BackgroundVideo";
+import HeroPoster from "./HeroPoster";
 
 export default function Hero() {
   return (
-    <section className="bg-raisinBlack relative flex min-h-screen w-full items-center justify-center overflow-hidden">
+    <section className="bg-raisinBlack relative flex min-h-svh w-full items-center justify-center overflow-hidden">
       {/* TŁO WIDEO I NAKŁADKI */}
       <div className="absolute inset-0 h-full w-full">
-        {/* Statyczny obraz - ładuje się z serwera */}
-        <Image
-          src="/video-poster.webp"
-          alt="Muzycy na scenie"
-          fill
-          priority
-          sizes="100vw"
-          quality={75}
-          className="object-cover"
-        />
+        {/* Statyczny plakat (LCP) – osobny kadr dla telefonu i komputera */}
+        <HeroPoster />
 
         {/* Dynamiczne wideo - ładuje się po stronie klienta */}
         <BackgroundVideo />
@@ -56,8 +48,8 @@ export default function Hero() {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
                 strokeWidth={2.5}
+                aria-hidden="true"
               >
-                <title>Strzałka</title>
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -65,7 +57,7 @@ export default function Hero() {
                 />
               </svg>
             </span>
-            <div className="absolute inset-0 z-0 h-full w-full -translate-x-full rounded-full bg-white/30 transition-transform duration-700 ease-out group-hover:translate-x-0" />
+            <span className="absolute inset-0 z-0 h-full w-full -translate-x-full rounded-full bg-white/30 transition-transform duration-700 ease-out group-hover:translate-x-0" />
           </Link>
 
           <Link
@@ -78,6 +70,7 @@ export default function Hero() {
       </div>
 
       <div
+        aria-hidden="true"
         className="animate-fade-in-up absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-2 opacity-0 md:bottom-8 md:gap-3 [@media(max-height:600px)]:hidden md:[@media(max-height:800px)]:hidden lg:[@media(max-height:900px)]:hidden"
         style={{ animationDelay: "600ms" }}
       >

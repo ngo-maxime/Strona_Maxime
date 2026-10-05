@@ -1,11 +1,24 @@
 // src/app/(user)/aktualnosci/[slug]/page.tsx
-import { PortableText } from "@portabletext/react";
-import Image from "next/image";
+import { PortableText, type PortableTextComponents } from "@portabletext/react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { defineQuery } from "next-sanity";
+import JsonLd from "@/components/seo/JsonLd";
+import Image from "@/components/ui/CmsImage";
 import FadeIn from "@/components/ui/FadeIn";
-import { sanityFetch } from "@/sanity/lib/live";
+import PortableLink from "@/components/ui/PortableLink";
+import { getWarsawParts, MONTHS_GENITIVE } from "@/lib/date";
+import {
+  breadcrumbJsonLd,
+  ORGANIZATION_ID,
+  pageMetadata,
+  SITE_URL,
+  sanityOgImage,
+  truncate,
+} from "@/lib/site";
+import { client } from "@/sanity/lib/client";
+import { sanityFetch } from "@/sanity/lib/fetch";
 
 // USUNIĘTO: category, author z zapytania
 const ARTICLE_QUERY = defineQuery(`
@@ -15,9 +28,27 @@ const ARTICLE_QUERY = defineQuery(`
     readTime,
     publishedAt,
     "image": image.asset->url,
-    content
+    "updatedAt": _updatedAt,
+    // Obrazy w treści muszą mieć rozwiązane assety – inaczej value.asset.url było puste
+    content[]{
+      ...,
+      _type == "image" => {
+        ...,
+        "asset": asset->{ url, metadata { lqip, dimensions { width, height } } }
+      }
+    }
   }
 `);
+
+const ARTICLE_META_QUERY = defineQuery(`
+  *[_type == "news" && slug.current == $slug][0] {
+    title, subtitle, excerpt, publishedAt, _updatedAt, "image": image.asset->url
+  }
+`);
+
+const NEWS_SLUGS_QUERY = defineQuery(
+  `*[_type == "news" && defined(slug.current)].slug.current`,
+);
 
 // USUNIĘTO: category
 const RELATED_QUERY = defineQuery(`
@@ -28,39 +59,47 @@ const RELATED_QUERY = defineQuery(`
   }
 `);
 
-const portableTextComponents = {
+const portableTextComponents: PortableTextComponents = {
+  marks: { link: PortableLink },
   types: {
-    image: ({ value }: any) => {
+    image: ({ value }) => {
+      if (!value?.asset?.url) return null;
       return (
-        <div className="my-16 grid grid-cols-1 items-center gap-8 md:grid-cols-12">
+        <figure className="my-16 grid grid-cols-1 items-center gap-8 md:grid-cols-12">
           <div className="md:col-span-8">
             <div className="bg-raisinBlack relative aspect-video w-full overflow-hidden">
               <Image
                 src={value.asset.url}
-                alt={value.alt || "Zdjęcie z artykułu"}
+                alt={value.alt || ""}
                 fill
+                sizes="(max-width: 768px) 100vw, 512px"
+                placeholder={value.asset.metadata?.lqip ? "blur" : "empty"}
+                blurDataURL={value.asset.metadata?.lqip}
                 className="object-cover opacity-80 mix-blend-luminosity transition-all duration-1000 hover:mix-blend-normal"
               />
             </div>
           </div>
-        </div>
+        </figure>
       );
     },
   },
   block: {
-    h2: ({ children }: any) => (
+    h2: ({ children }) => (
       <h2 className="mt-16 mb-6 text-3xl font-bold text-white">{children}</h2>
     ),
-    h3: ({ children }: any) => (
+    h3: ({ children }) => (
       <h3 className="mt-12 mb-4 text-2xl font-bold text-white">{children}</h3>
     ),
-    normal: ({ children }: any) => (
+    normal: ({ children }) => (
       <p className="mb-8 leading-loose font-light text-white/70">{children}</p>
     ),
-    blockquote: ({ children }: any) => (
+    blockquote: ({ children }) => (
       <div className="relative my-20 py-10">
         <div className="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-white/5" />
-        <div className="font-youngest pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15rem] text-white/3">
+        <div
+          aria-hidden="true"
+          className="font-youngest pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15rem] text-white/3"
+        >
           "
         </div>
         <blockquote className="relative z-10 px-4 text-center md:px-12">
@@ -73,11 +112,41 @@ const portableTextComponents = {
   },
 };
 
-export default async function NewsArticlePage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+type Props = { params: Promise<{ slug: string }> };
+
+export async function generateStaticParams() {
+  try {
+    const slugs = await client.fetch<string[]>(NEWS_SLUGS_QUERY);
+    return slugs.map((slug) => ({ slug }));
+  } catch {
+    return [];
+  }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const { data } = await sanityFetch({
+    query: ARTICLE_META_QUERY,
+    params: { slug },
+  });
+  if (!data) return {};
+
+  return pageMetadata({
+    title: data.title,
+    description: truncate(
+      [data.excerpt || data.subtitle, "Aktualności Fundacji Maxime"]
+        .filter(Boolean)
+        .join(" – "),
+    ),
+    path: `/aktualnosci/${slug}`,
+    image: sanityOgImage(data.image),
+    type: "article",
+    publishedTime: data.publishedAt,
+    modifiedTime: data._updatedAt,
+  });
+}
+
+export default async function NewsArticlePage({ params }: Props) {
   const resolvedParams = await params;
 
   const [articleRes, relatedRes] = await Promise.all([
@@ -96,26 +165,37 @@ export default async function NewsArticlePage({
 
   if (!article) notFound();
 
-  const d = new Date(article.publishedAt);
-  const monthsPl = [
-    "Stycznia",
-    "Lutego",
-    "Marca",
-    "Kwietnia",
-    "Maja",
-    "Czerwca",
-    "Lipca",
-    "Sierpnia",
-    "Września",
-    "Października",
-    "Listopada",
-    "Grudnia",
-  ];
-  const formattedDate = `${d.getDate()} ${monthsPl[d.getMonth()]} ${d.getFullYear()}`;
+  const d = getWarsawParts(article.publishedAt ?? new Date());
+  const formattedDate = `${d.day} ${MONTHS_GENITIVE[d.monthIndex]} ${d.year}`;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: article.title,
+    ...(article.image && { image: [article.image] }),
+    datePublished: article.publishedAt,
+    dateModified: article.updatedAt ?? article.publishedAt,
+    mainEntityOfPage: `${SITE_URL}/aktualnosci/${resolvedParams.slug}`,
+    ...(article.excerpt && { description: article.excerpt }),
+    inLanguage: "pl-PL",
+    author: { "@id": ORGANIZATION_ID },
+    publisher: { "@id": ORGANIZATION_ID },
+  };
 
   return (
-    <main className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full">
-      <div className="fixed top-0 left-0 z-120 h-1 w-full bg-white/5">
+    <div className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full">
+      <JsonLd data={jsonLd} />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Aktualności", path: "/aktualnosci" },
+          { name: article.title, path: `/aktualnosci/${resolvedParams.slug}` },
+        ])}
+      />
+      {/* Pasek postępu czytania (keyframes scroll-progress dodane w globals.css) */}
+      <div
+        aria-hidden="true"
+        className="fixed top-0 left-0 z-120 h-1 w-full bg-white/5"
+      >
         <div
           className="bg-arylideYellow h-full w-0 animate-[scroll-progress_linear_both]"
           style={{ animationTimeline: "scroll()" }}
@@ -126,9 +206,11 @@ export default async function NewsArticlePage({
         <div className="absolute inset-0 z-0">
           <Image
             src={article.image || "/video-poster.webp"}
-            alt={article.title}
+            alt=""
             fill
-            priority
+            preload
+            fetchPriority="high"
+            sizes="100vw"
             className="scale-105 object-cover opacity-50"
           />
           <div className="from-raisinBlack via-raisinBlack/80 absolute inset-0 bg-linear-to-t to-transparent" />
@@ -162,9 +244,11 @@ export default async function NewsArticlePage({
           <FadeIn delay="100ms">
             <div className="font-montserrat text-arylideYellow mb-6 flex flex-wrap items-center gap-4 text-[0.65rem] font-bold tracking-[0.3em] uppercase">
               {/* USUNIĘTO KATEGORIĘ (został tylko czas czytania, jako gładki element interfejsu) */}
-              <span className="text-white/50">
-                {article.readTime} min czytania
-              </span>
+              {article.readTime ? (
+                <span className="text-white/50">
+                  {article.readTime} min czytania
+                </span>
+              ) : null}
             </div>
           </FadeIn>
 
@@ -186,9 +270,12 @@ export default async function NewsArticlePage({
                 <span className="font-montserrat mb-1 text-[0.6rem] font-bold tracking-[0.3em] text-white/40 uppercase">
                   Data publikacji
                 </span>
-                <span className="font-montserrat text-sm font-medium text-white">
+                <time
+                  dateTime={article.publishedAt}
+                  className="font-montserrat text-sm font-medium text-white"
+                >
                   {formattedDate}
-                </span>
+                </time>
               </div>
             </div>
           </FadeIn>
@@ -202,6 +289,7 @@ export default async function NewsArticlePage({
             src="/Asset-1.svg"
             alt=""
             fill
+            sizes="600px"
             className="object-contain brightness-0 invert"
           />
         </div>
@@ -219,46 +307,52 @@ export default async function NewsArticlePage({
       </section>
 
       {/* CZYTAJ DALEJ */}
-      {relatedPosts.length > 0 && (
+      {relatedPosts?.length > 0 && (
         <section className="relative z-10 w-full bg-[#1c1c1c] py-24 lg:py-32">
           <div className="mx-auto w-full max-w-7xl px-6 lg:px-12">
             <FadeIn>
               <div className="mb-16 flex items-center gap-6 lg:mb-24">
                 <div className="bg-arylideYellow h-px w-16" />
-                <h3 className="font-youngest text-4xl text-white lg:text-5xl">
+                <h2 className="font-youngest text-4xl text-white lg:text-5xl">
                   Czytaj dalej
-                </h3>
+                </h2>
               </div>
             </FadeIn>
 
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:gap-12">
-              {relatedPosts.map((post: any, i: number) => (
-                <FadeIn key={post.id} delay={`${i * 200}ms`}>
-                  <Link
-                    href={`/aktualnosci/${post.id}`}
-                    className="group flex flex-col overflow-hidden border border-white/5 bg-[#222222] transition-all duration-500 hover:-translate-y-2 hover:border-white/10 hover:shadow-2xl"
-                  >
-                    <div className="relative aspect-video w-full overflow-hidden">
-                      <Image
-                        src={post.image || "/video-poster.webp"}
-                        alt={post.title}
-                        fill
-                        className="object-cover opacity-70 transition-transform duration-2000 group-hover:scale-105 group-hover:opacity-100"
-                      />
-                      {/* USUNIĘTO KATEGORIĘ Z TEGO MIEJSCA W ZDJĘCIU */}
-                    </div>
-                    <div className="flex grow flex-col justify-between p-8 lg:p-10">
-                      <h4 className="font-montserrat group-hover:text-arylideYellow mb-8 text-xl leading-tight font-bold text-white transition-colors lg:text-2xl">
-                        {post.title}
-                      </h4>
-                    </div>
-                  </Link>
-                </FadeIn>
-              ))}
+              {relatedPosts.map(
+                (
+                  post: { id: string; title: string; image?: string },
+                  i: number,
+                ) => (
+                  <FadeIn key={post.id} delay={`${i * 200}ms`}>
+                    <Link
+                      href={`/aktualnosci/${post.id}`}
+                      className="group flex flex-col overflow-hidden border border-white/5 bg-[#222222] transition-all duration-500 hover:-translate-y-2 hover:border-white/10 hover:shadow-2xl"
+                    >
+                      <div className="relative aspect-video w-full overflow-hidden">
+                        <Image
+                          src={post.image || "/video-poster.webp"}
+                          alt=""
+                          fill
+                          sizes="(max-width: 768px) 100vw, 600px"
+                          className="object-cover opacity-70 transition-transform duration-2000 group-hover:scale-105 group-hover:opacity-100"
+                        />
+                        {/* USUNIĘTO KATEGORIĘ Z TEGO MIEJSCA W ZDJĘCIU */}
+                      </div>
+                      <div className="flex grow flex-col justify-between p-8 lg:p-10">
+                        <h3 className="font-montserrat group-hover:text-arylideYellow mb-8 text-xl leading-tight font-bold text-white transition-colors lg:text-2xl">
+                          {post.title}
+                        </h3>
+                      </div>
+                    </Link>
+                  </FadeIn>
+                ),
+              )}
             </div>
           </div>
         </section>
       )}
-    </main>
+    </div>
   );
 }

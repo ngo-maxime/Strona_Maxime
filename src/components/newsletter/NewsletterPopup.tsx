@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-// Upewnij się, że ścieżka poniżej odpowiada miejscu Twojego NewsletterForm
-import NewsletterForm from "./NewsletterForm";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { CONSENT_EVENT, readConsent } from "@/lib/consent";
+import NewsletterForm, { NEWSLETTER_SUBSCRIBED_KEY } from "./NewsletterForm";
 
 // Przeniesienie wykluczonych ścieżek poza komponent zapobiega niepotrzebnym re-renderom
 const BLOCKED_PATHS = ["/kontakt", "/regulamin", "/polityka-prywatnosci"];
@@ -14,19 +14,32 @@ export default function NewsletterPopup() {
 
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  // Popup nie może nachodzić na baner cookies – czekamy na decyzję użytkownika
+  const [hasConsentDecision, setHasConsentDecision] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    // 1. Sprawdzamy czy nie jesteśmy na podstronie wykluczonej
-    if (BLOCKED_PATHS.includes(pathname)) return;
+    setHasConsentDecision(Boolean(readConsent()));
+    const onConsent = () => setHasConsentDecision(true);
+    window.addEventListener(CONSENT_EVENT, onConsent);
+    return () => window.removeEventListener(CONSENT_EVENT, onConsent);
+  }, []);
 
-    // 2. Sprawdzamy, czy użytkownik nie zamknął popupu w ciągu ostatnich 30 dni
-    const popupClosedAt = localStorage.getItem("maxime_newsletter_closed");
-    if (popupClosedAt) {
-      const closedDate = new Date(popupClosedAt).getTime();
-      const now = Date.now();
-      const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+  useEffect(() => {
+    // 1. Sprawdzamy czy nie jesteśmy na podstronie wykluczonej / czy jest decyzja ws. cookies
+    if (BLOCKED_PATHS.includes(pathname) || !hasConsentDecision) return;
 
-      if (now - closedDate < thirtyDays) return;
+    // 2. Osoby zapisane nie widzą popupu; zamknięty popup wraca dopiero po 30 dniach
+    try {
+      if (localStorage.getItem(NEWSLETTER_SUBSCRIBED_KEY)) return;
+      const popupClosedAt = localStorage.getItem("maxime_newsletter_closed");
+      if (popupClosedAt) {
+        const closedDate = new Date(popupClosedAt).getTime();
+        const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+        if (Date.now() - closedDate < thirtyDays) return;
+      }
+    } catch {
+      return; // brak dostępu do localStorage (tryb prywatny) – nie męczymy popupem
     }
 
     let timer: NodeJS.Timeout;
@@ -35,6 +48,13 @@ export default function NewsletterPopup() {
     const triggerPopup = () => {
       if (hasTriggered) return; // Jeśli już kiedykolwiek się odpalił, blokujemy
       if (localStorage.getItem("maxime_newsletter_closed")) return;
+      // Nie przerywamy pisania w innym formularzu na stronie
+      const active = document.activeElement;
+      if (
+        active instanceof HTMLInputElement ||
+        active instanceof HTMLTextAreaElement
+      )
+        return;
 
       hasTriggered = true; // Zaznaczamy, że popup właśnie się uruchomił
       setIsVisible(true);
@@ -60,7 +80,7 @@ export default function NewsletterPopup() {
 
     // Włączamy wyzwalacze (Exit Intent i Scroll)
     window.addEventListener("mouseout", handleMouseOut);
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     // Włączamy timer awaryjny (jeśli ktoś siedzi bezczynnie przez 45 sekund)
     timer = setTimeout(() => {
@@ -73,36 +93,61 @@ export default function NewsletterPopup() {
       window.removeEventListener("scroll", handleScroll);
       clearTimeout(timer);
     };
-  }, [pathname]);
+  }, [pathname, hasConsentDecision]);
 
-  const closePopup = () => {
+  const closePopup = useCallback(() => {
     setIsAnimating(false);
     // Zapisujemy w pamięci przeglądarki, że zamknął popup - mamy spokój na 30 dni
-    localStorage.setItem("maxime_newsletter_closed", new Date().toISOString());
+    try {
+      localStorage.setItem(
+        "maxime_newsletter_closed",
+        new Date().toISOString(),
+      );
+    } catch {}
 
     setTimeout(() => {
       setIsVisible(false);
     }, 800);
-  };
+  }, []);
+
+  // Escape zamyka popup, fokus trafia do okna (dostępność)
+  useEffect(() => {
+    if (!isVisible) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus({ preventScroll: true });
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closePopup();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      previouslyFocused?.focus?.({ preventScroll: true });
+    };
+  }, [isVisible, closePopup]);
 
   if (!isVisible) return null;
 
   return (
     <div
-      className={`fixed inset-0 z-200 flex items-center justify-center px-4 transition-all duration-800 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="newsletter-popup-title"
+      className={`fixed inset-0 z-200 flex justify-center overflow-y-auto px-4 py-6 transition-all duration-800 ease-[cubic-bezier(0.16,1,0.3,1)] ${
         isAnimating ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
     >
       {/* TŁO - CIEMNY BACKDROP Z MOCNYM BLUREM */}
-      <div
-        className="bg-raisinBlack/80 absolute inset-0 cursor-pointer backdrop-blur-md"
+      <button
+        type="button"
+        tabIndex={-1}
+        className="bg-raisinBlack/80 fixed inset-0 cursor-pointer backdrop-blur-md"
         onClick={closePopup}
         aria-label="Zamknij popup"
       />
 
       {/* GŁÓWNY KONTENER POPUPU */}
       <div
-        className={`relative w-full max-w-xl overflow-hidden rounded-3xl border border-white/10 bg-[#161616] p-8 shadow-[0_40px_100px_rgba(0,0,0,0.8)] transition-all duration-800 ease-[cubic-bezier(0.16,1,0.3,1)] sm:p-14 ${
+        className={`relative my-auto w-full max-w-xl overflow-hidden rounded-3xl border border-white/10 bg-[#161616] p-8 shadow-[0_40px_100px_rgba(0,0,0,0.8)] transition-all duration-800 ease-[cubic-bezier(0.16,1,0.3,1)] sm:p-14 ${
           isAnimating
             ? "translate-y-0 scale-100"
             : "translate-y-16 scale-[0.95]"
@@ -117,18 +162,21 @@ export default function NewsletterPopup() {
             src="/Asset-1.svg"
             alt=""
             fill
+            sizes="320px"
             className="animate-[spin_120s_linear_infinite] object-contain brightness-0 invert"
           />
         </div>
 
         {/* PRZYCISK ZAMKNIJ (X) */}
         <button
+          ref={closeButtonRef}
           type="button"
           onClick={closePopup}
           className="group hover:bg-arylideYellow hover:text-raisinBlack absolute top-6 right-6 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition-all duration-500"
           aria-label="Zamknij"
         >
           <svg
+            aria-hidden="true"
             className="h-4 w-4 transition-transform duration-500 group-hover:rotate-90"
             fill="none"
             viewBox="0 0 24 24"
@@ -153,7 +201,10 @@ export default function NewsletterPopup() {
             <div className="bg-arylideYellow h-px w-8" />
           </div>
 
-          <h2 className="font-montserrat mb-6 text-4xl leading-[1.05] font-black text-white sm:text-5xl">
+          <h2
+            id="newsletter-popup-title"
+            className="font-montserrat mb-6 text-4xl leading-[1.05] font-black text-white sm:text-5xl"
+          >
             Bądź o krok <br />
             <span className="font-youngest text-arylideYellow relative top-3 inline-block -rotate-2 text-[3.5rem] leading-none font-normal sm:text-[4.5rem]">
               przed innymi.

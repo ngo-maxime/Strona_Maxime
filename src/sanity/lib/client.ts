@@ -7,5 +7,8 @@ export const client = createClient({
   projectId,
   dataset,
   apiVersion,
-  useCdn: true, // Set to false if statically generating pages, using ISR or tag-based revalidation
+  // Strony są statyczne (ISR) i odświeżane webhookiem – zapytania trafiają do Sanity
+  // rzadko, więc pobieramy zawsze najświeższe dane prosto z API (bez opóźnień CDN).
+  useCdn: false,
+  perspective: "published",
 });

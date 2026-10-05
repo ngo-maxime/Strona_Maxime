@@ -1,9 +1,11 @@
 // src/components/home/LatestUpdates.tsx
-import Image from "next/image";
+
 import Link from "next/link";
 import { defineQuery } from "next-sanity";
+import Image from "@/components/ui/CmsImage";
 import FadeIn from "@/components/ui/FadeIn";
-import { sanityFetch } from "@/sanity/lib/live";
+import { getWarsawParts, MONTHS_GENITIVE, MONTHS_SHORT } from "@/lib/date";
+import { sanityFetch } from "@/sanity/lib/fetch";
 
 // 1. GŁÓWNE ZAPYTANIE GROQ POBIERAJĄCE WSZYSTKO NA RAZ
 const HOME_DATA_QUERY = defineQuery(`{
@@ -46,26 +48,13 @@ export default async function LatestUpdates() {
   const galleryRaw = data.gallery;
 
   // --- FORMATOWANIE WYDARZENIA ---
-  const dEvent = eventRaw?.date ? new Date(eventRaw.date) : new Date();
-  const monthsPlShort = [
-    "STY",
-    "LUT",
-    "MAR",
-    "KWI",
-    "MAJ",
-    "CZE",
-    "LIP",
-    "SIE",
-    "WRZ",
-    "PAŹ",
-    "LIS",
-    "GRU",
-  ];
+  // Daty liczone w strefie Europe/Warsaw (serwer działa w UTC)
+  const dEvent = getWarsawParts(eventRaw?.date ?? new Date());
 
   const eventData = {
-    date: eventRaw ? String(dEvent.getDate()).padStart(2, "0") : "00",
-    month: eventRaw ? monthsPlShort[dEvent.getMonth()] : "B/D",
-    year: eventRaw ? String(dEvent.getFullYear()) : "0000",
+    date: eventRaw ? String(dEvent.day).padStart(2, "0") : "00",
+    month: eventRaw ? MONTHS_SHORT[dEvent.monthIndex] : "B/D",
+    year: eventRaw ? String(dEvent.year) : "0000",
     title: eventRaw?.title || "Brak zaplanowanych wydarzeń",
     location: eventRaw?.location || "Miejsce do ustalenia",
     image: eventRaw?.image || "/video-poster.webp",
@@ -73,27 +62,11 @@ export default async function LatestUpdates() {
   };
 
   // --- FORMATOWANIE AKTUALNOŚCI ---
-  const dNews = newsRaw?.publishedAt
-    ? new Date(newsRaw.publishedAt)
-    : new Date();
-  const monthsPlGenitive = [
-    "Stycznia",
-    "Lutego",
-    "Marca",
-    "Kwietnia",
-    "Maja",
-    "Czerwca",
-    "Lipca",
-    "Sierpnia",
-    "Września",
-    "Października",
-    "Listopada",
-    "Grudnia",
-  ];
+  const dNews = getWarsawParts(newsRaw?.publishedAt ?? new Date());
 
   const newsData = {
     date: newsRaw
-      ? `${dNews.getDate()} ${monthsPlGenitive[dNews.getMonth()]} ${dNews.getFullYear()}`
+      ? `${dNews.day} ${MONTHS_GENITIVE[dNews.monthIndex]} ${dNews.year}`
       : "Brak daty",
     title: newsRaw?.title || "Brak aktualności",
     excerpt:
@@ -115,7 +88,10 @@ export default async function LatestUpdates() {
   return (
     <section className="relative z-30 w-full overflow-hidden bg-[#F4F4F5] py-24 lg:py-32 xl:py-48">
       {/* --- TŁO: DOSŁOWNA PIĘCIOLINIA --- */}
-      <div className="pointer-events-none absolute top-1/3 left-[-10%] z-0 flex w-[120%] -rotate-12 flex-col gap-3 opacity-15 lg:gap-5">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/3 left-[-10%] z-0 flex w-[120%] -rotate-12 flex-col gap-3 opacity-15 lg:gap-5"
+      >
         <div className="bg-raisinBlack h-0.5 w-full" />
         <div className="bg-raisinBlack h-0.5 w-full" />
         <div className="bg-raisinBlack h-0.5 w-full" />
@@ -123,7 +99,10 @@ export default async function LatestUpdates() {
         <div className="bg-raisinBlack h-0.5 w-full" />
       </div>
 
-      <div className="pointer-events-none absolute top-7/10 left-[-10%] z-0 flex w-[120%] rotate-6 flex-col gap-3 opacity-15 lg:gap-5">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-7/10 left-[-10%] z-0 flex w-[120%] rotate-6 flex-col gap-3 opacity-15 lg:gap-5"
+      >
         <div className="bg-raisinBlack h-0.5 w-full" />
         <div className="bg-raisinBlack h-0.5 w-full" />
         <div className="bg-raisinBlack h-0.5 w-full" />
@@ -153,7 +132,10 @@ export default async function LatestUpdates() {
           <div className="relative w-full md:mx-auto md:max-w-150 xl:col-span-6 xl:mx-0 xl:max-w-none">
             <FadeIn delay="200ms">
               <div className="mb-6 flex items-end gap-2 sm:mb-8">
-                <span className="text-transparent[-webkit-text-stroke:2px_rgba(38,38,38,0.2)] font-montserrat text-[4.5rem] leading-none font-black sm:text-[6rem] xl:text-[7rem]">
+                <span
+                  aria-hidden="true"
+                  className="text-transparent [-webkit-text-stroke:2px_rgba(38,38,38,0.2)] font-montserrat text-[4.5rem] leading-none font-black sm:text-[6rem] xl:text-[7rem]"
+                >
                   01
                 </span>
                 <h3 className="font-youngest text-arylideYellow relative bottom-2 text-[2.4rem] sm:bottom-4 sm:text-5xl xl:text-6xl">
@@ -203,7 +185,10 @@ export default async function LatestUpdates() {
             <div className="w-full md:mx-auto md:max-w-150 xl:mx-0 xl:max-w-none">
               <FadeIn delay="400ms">
                 <div className="mb-6 flex items-end gap-2 sm:mb-8">
-                  <span className="text-transparent[-webkit-text-stroke:2px_rgba(38,38,38,0.2)] font-montserrat text-[4.5rem] leading-none font-black sm:text-[6rem] xl:text-[7rem]">
+                  <span
+                    aria-hidden="true"
+                    className="text-transparent [-webkit-text-stroke:2px_rgba(38,38,38,0.2)] font-montserrat text-[4.5rem] leading-none font-black sm:text-[6rem] xl:text-[7rem]"
+                  >
                     02
                   </span>
                   <h3 className="font-youngest text-arylideYellow relative bottom-2 text-[2.4rem] sm:bottom-4 sm:text-5xl xl:text-6xl">
@@ -237,6 +222,7 @@ export default async function LatestUpdates() {
                     <span className="font-montserrat text-oxfordBlue group-hover:text-arylideYellow inline-flex items-center gap-4 text-[0.65rem] font-bold tracking-widest uppercase transition-colors xl:text-[0.7rem]">
                       Czytaj wpis
                       <svg
+                        aria-hidden="true"
                         className="h-4 w-4 transition-transform duration-500 group-hover:translate-x-2"
                         fill="none"
                         viewBox="0 0 24 24"
@@ -259,7 +245,10 @@ export default async function LatestUpdates() {
             <div className="w-full md:mx-auto md:max-w-150 xl:mx-0 xl:-ml-75 xl:max-w-none">
               <FadeIn delay="600ms">
                 <div className="mb-6 flex items-end gap-2 sm:mb-8">
-                  <span className="text-transparent[-webkit-text-stroke:2px_rgba(38,38,38,0.2)] font-montserrat text-[4.5rem] leading-none font-black sm:text-[6rem] xl:text-[7rem]">
+                  <span
+                    aria-hidden="true"
+                    className="text-transparent [-webkit-text-stroke:2px_rgba(38,38,38,0.2)] font-montserrat text-[4.5rem] leading-none font-black sm:text-[6rem] xl:text-[7rem]"
+                  >
                     03
                   </span>
                   <h3 className="font-youngest text-arylideYellow relative bottom-2 text-[2.4rem] sm:bottom-4 sm:text-5xl xl:text-6xl">

@@ -78,3 +78,38 @@
     transform: translateY(0);
   }
 }
+
+/* Pasek postępu czytania artykułu (animation-timeline: scroll()) */
+@keyframes scroll-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* UX / dostępność                                                     */
+/* ------------------------------------------------------------------ */
+
+/* Kotwice (#formularz-kontaktowy itp.) nie chowają się pod stałym menu */
+html {
+  scroll-padding-top: 7rem;
+  scroll-behavior: smooth;
+}
+
+/* Widoczny fokus przy nawigacji klawiaturą (myszką bez zmian w wyglądzie) */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-arylideYellow);
+  outline-offset: 3px;
+}
+
+/* Poziome listy przewijane bez widocznego paska (filtr miesięcy w kalendarium) */
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}

@@ -1,12 +1,22 @@
 // src/app/(user)/aktualnosci/page.tsx
 
-import Image from "next/image";
 import Link from "next/link";
 import { defineQuery } from "next-sanity";
 import NewsList from "@/components/news/NewsList";
 import NewsletterForm from "@/components/newsletter/NewsletterForm";
+import JsonLd from "@/components/seo/JsonLd";
+import Image from "@/components/ui/CmsImage";
 import FadeIn from "@/components/ui/FadeIn";
-import { sanityFetch } from "@/sanity/lib/live";
+import { getWarsawParts, MONTHS_GENITIVE } from "@/lib/date";
+import { pageJsonLd, pageMetadata } from "@/lib/site";
+import { sanityFetch } from "@/sanity/lib/fetch";
+
+export const metadata = pageMetadata({
+  title: "Aktualności",
+  description:
+    "Zanurz się w świecie Maxime i bądź na bieżąco z każdym naszym ruchem – nowości, zapowiedzi i relacje z życia orkiestry Fundacji Maxime.",
+  path: "/aktualnosci",
+});
 
 export interface NewsProps {
   id: string;
@@ -28,44 +38,38 @@ const NEWS_QUERY = defineQuery(`
   }
 `);
 
-const monthsPlGenitive = [
-  "Stycznia",
-  "Lutego",
-  "Marca",
-  "Kwietnia",
-  "Maja",
-  "Czerwca",
-  "Lipca",
-  "Sierpnia",
-  "Września",
-  "Października",
-  "Listopada",
-  "Grudnia",
-];
+interface RawNews {
+  id: string;
+  title?: string;
+  excerpt?: string;
+  publishedAt?: string;
+  image?: string;
+}
 
-function formatNewsData(rawNews: any): NewsProps {
-  const d = rawNews.publishedAt ? new Date(rawNews.publishedAt) : new Date();
+function formatNewsData(rawNews: RawNews): NewsProps {
+  // Data w strefie Europe/Warsaw (serwer działa w UTC)
+  const d = getWarsawParts(rawNews.publishedAt ?? new Date());
 
   return {
     id: rawNews.id,
     title: rawNews.title || "Bez tytułu",
     excerpt: rawNews.excerpt || "",
     image: rawNews.image || "/video-poster.webp",
-    date: String(d.getDate()).padStart(2, "0"),
-    month: monthsPlGenitive[d.getMonth()],
-    year: String(d.getFullYear()),
+    date: String(d.day).padStart(2, "0"),
+    month: MONTHS_GENITIVE[d.monthIndex],
+    year: String(d.year),
   };
 }
 
 export default async function NewsPage() {
   const { data } = await sanityFetch({ query: NEWS_QUERY });
-  const formattedNews = data.map(formatNewsData);
+  const formattedNews = (data ?? []).map(formatNewsData);
 
   if (!formattedNews || formattedNews.length === 0) {
     return (
-      <main className="bg-raisinBlack flex min-h-screen items-center justify-center pt-32">
+      <div className="bg-raisinBlack flex min-h-screen items-center justify-center pt-32">
         <h1 className="font-youngest text-4xl text-white">Brak aktualności.</h1>
-      </main>
+      </div>
     );
   }
 
@@ -73,7 +77,21 @@ export default async function NewsPage() {
   const regularPosts = formattedNews.slice(1);
 
   return (
-    <main className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full overflow-x-hidden">
+    <div className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full overflow-x-hidden">
+      <JsonLd
+        data={pageJsonLd({
+          type: "CollectionPage",
+          name: "Aktualności",
+          description:
+            "Zanurz się w świecie Maxime i bądź na bieżąco z każdym naszym ruchem – nowości, zapowiedzi i relacje z życia orkiestry Fundacji Maxime.",
+          path: "/aktualnosci",
+          crumb: "Aktualności",
+          items: formattedNews.map((n: { title: string; id: string }) => ({
+            name: n.title,
+            path: `/aktualnosci/${n.id}`,
+          })),
+        })}
+      />
       {/* HERO SECTION (Renderowane na Serwerze) */}
       <section className="relative z-10 flex min-h-[60vh] w-full flex-col justify-center px-6 pt-32 lg:px-12 lg:pt-40">
         <div className="pointer-events-none absolute top-20 -right-20 z-0 h-150 w-150 opacity-5 lg:-top-20 lg:-right-32 lg:h-225 lg:w-225 xl:h-275 xl:w-275">
@@ -81,13 +99,19 @@ export default async function NewsPage() {
             src="/Asset-1.svg"
             alt=""
             fill
+            sizes="1100px"
             className="object-contain brightness-0 invert"
           />
         </div>
-        <div className="pointer-events-none absolute top-1/2 left-0 z-0 -translate-y-1/2 opacity-[0.02] mix-blend-overlay select-none">
-          <span className="font-montserrat text-[25vw] leading-none font-black whitespace-nowrap text-white">
-            AKTUALNOŚCI
-          </span>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-0 z-0 -translate-y-1/2 opacity-[0.02] mix-blend-overlay select-none"
+        >
+          <span
+            aria-hidden="true"
+            data-deco="AKTUALNOŚCI"
+            className="font-montserrat text-[25vw] leading-none font-black whitespace-nowrap text-white before:content-[attr(data-deco)]"
+          />
         </div>
         <div className="relative z-10 mx-auto w-full max-w-7xl">
           <FadeIn delay="100ms">
@@ -122,13 +146,15 @@ export default async function NewsPage() {
             <FadeIn className="relative w-full xl:w-[70%]">
               <Link
                 href={`/aktualnosci/${featuredPost.id}`}
+                aria-label={featuredPost.title}
                 className="group relative block aspect-4/3 w-full overflow-hidden bg-[#1a1a1a] xl:aspect-16/10"
               >
                 <Image
                   src={featuredPost.image}
-                  alt={featuredPost.title}
+                  alt=""
                   fill
-                  priority
+                  preload
+                  sizes="(max-width: 1280px) 100vw, 900px"
                   className="object-cover opacity-80 transition-transform duration-2000 ease-out group-hover:scale-105 group-hover:opacity-100"
                 />
                 <div className="bg-oxfordBlue/20 absolute inset-0 mix-blend-multiply transition-colors duration-700 group-hover:bg-transparent" />
@@ -175,6 +201,7 @@ export default async function NewsPage() {
                 Czytaj artykuł
                 <div className="group-hover:border-arylideYellow group-hover:bg-arylideYellow group-hover:text-raisinBlack relative flex h-8 w-8 items-center justify-center rounded-full border border-white/20 transition-all duration-300">
                   <svg
+                    aria-hidden="true"
                     className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-0.5"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -200,7 +227,13 @@ export default async function NewsPage() {
       {/* SEKCJA NEWSLETTER (Renderowane na Serwerze) */}
       <section className="bg-arylideYellow relative z-10 w-full overflow-hidden py-24 lg:py-32">
         <div className="pointer-events-none absolute inset-0 z-0 opacity-10">
-          <Image src="/Asset-2.svg" alt="" fill className="object-contain" />
+          <Image
+            src="/Asset-2.svg"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-contain"
+          />
         </div>
         <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
           <FadeIn>
@@ -228,6 +261,6 @@ export default async function NewsPage() {
           </FadeIn>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

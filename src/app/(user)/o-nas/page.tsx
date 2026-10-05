@@ -1,9 +1,13 @@
 // src/app/(user)/o-nas/page.tsx
-import Image from "next/image";
+
 import Link from "next/link";
 import { defineQuery } from "next-sanity";
+import JsonLd from "@/components/seo/JsonLd";
+import Image from "@/components/ui/CmsImage";
 import FadeIn from "@/components/ui/FadeIn";
-import { sanityFetch } from "@/sanity/lib/live"; // Upewnij się, że ścieżka do Twojego sanityFetch jest prawidłowa
+import { pageJsonLd, pageMetadata } from "@/lib/site";
+import { sanityFetch } from "@/sanity/lib/fetch";
+import { getSiteSettings, hotspotPosition } from "@/sanity/lib/settings"; // Upewnij się, że ścieżka do Twojego sanityFetch jest prawidłowa
 
 // Zapytanie GROQ: Pobierz wszystkie kamienie milowe i posortuj je rosnąco według pola 'order'
 const MILESTONES_QUERY = defineQuery(`
@@ -15,6 +19,13 @@ const MILESTONES_QUERY = defineQuery(`
     "imageUrl": image.asset->url
   }
 `);
+
+export const metadata = pageMetadata({
+  title: "O nas – orkiestra i fundacja",
+  description:
+    "Maxime jest grupą muzyków i wizjonerów łączonych przez jeden cel: dostarczyć publiczności wysokiej jakości wydarzenia kulturalne. Gramy z pasją od 2022 roku.",
+  path: "/o-nas",
+});
 
 // Typowanie
 type TimelineItem = {
@@ -29,7 +40,7 @@ type TimelineItem = {
 const fallbackTimeline = [
   {
     _id: "fallback-1",
-    year: "2013",
+    year: "2022",
     title: "Narodziny idei",
     description:
       "Zaczęło się od kilku pasjonatów i jednego marzenia. Chcieliśmy stworzyć przestrzeń, w której muzyka nie jest tylko odtwarzana, ale przeżywana.",
@@ -47,13 +58,32 @@ const fallbackTimeline = [
 
 export default async function AboutUsPage() {
   // Pobieramy dane jako Server Component
-  const { data } = await sanityFetch({ query: MILESTONES_QUERY });
+  const [{ data }, settings] = await Promise.all([
+    sanityFetch({ query: MILESTONES_QUERY }),
+    getSiteSettings(),
+  ]);
+  const photo = settings.aboutPageImage;
 
   // Decydujemy czy użyć danych z Sanity czy Fallbacku
-  const timelineData: TimelineItem[] = data?.length ? data : fallbackTimeline;
+  const timelineData: TimelineItem[] = (
+    data?.length ? data : fallbackTimeline
+  ).map((item: TimelineItem) => ({
+    ...item,
+    imageUrl: item.imageUrl || "/video-poster.webp",
+  }));
 
   return (
-    <main className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full overflow-hidden">
+    <div className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full overflow-hidden">
+      <JsonLd
+        data={pageJsonLd({
+          type: "AboutPage",
+          name: "O nas – orkiestra i fundacja",
+          description:
+            "Maxime jest grupą muzyków i wizjonerów łączonych przez jeden cel: dostarczyć publiczności wysokiej jakości wydarzenia kulturalne. Gramy z pasją od 2022 roku.",
+          path: "/o-nas",
+          crumb: "O nas",
+        })}
+      />
       {/* Pływające Assety SVG w tle */}
       <div className="pointer-events-none fixed inset-0 z-0 opacity-[0.03]">
         <div className="absolute top-20 left-10 h-200 w-200 opacity-50">
@@ -61,6 +91,7 @@ export default async function AboutUsPage() {
             src="/Asset-1.svg"
             alt=""
             fill
+            sizes="800px"
             className="object-contain brightness-0 invert"
           />
         </div>
@@ -69,6 +100,7 @@ export default async function AboutUsPage() {
             src="/Asset-2.svg"
             alt=""
             fill
+            sizes="960px"
             className="object-contain brightness-0 invert"
           />
         </div>
@@ -101,7 +133,10 @@ export default async function AboutUsPage() {
             </p>
           </FadeIn>
         </div>
-        <div className="absolute bottom-0 left-1/2 h-16 w-px -translate-x-1/2 overflow-hidden bg-white/10">
+        <div
+          aria-hidden="true"
+          className="absolute bottom-0 left-1/2 h-16 w-px -translate-x-1/2 overflow-hidden bg-white/10"
+        >
           <div className="animate-scroll-line bg-arylideYellow absolute top-0 left-0 h-full w-full" />
         </div>
       </section>
@@ -114,14 +149,18 @@ export default async function AboutUsPage() {
               <FadeIn>
                 <div className="relative aspect-4/5 w-full overflow-hidden bg-[#1a1a1a]">
                   <Image
-                    src="/video-poster.webp"
-                    alt="Próba orkiestry"
+                    src={photo?.url || "/video-poster.webp"}
+                    alt={photo?.alt || "Próba orkiestry"}
+                    placeholder={photo?.lqip ? "blur" : "empty"}
+                    blurDataURL={photo?.lqip}
+                    style={{ objectPosition: hotspotPosition(photo) }}
                     fill
+                    sizes="(max-width: 1024px) 100vw, 520px"
                     className="object-cover transition-transform duration-2000 hover:scale-105"
                   />
                   <div className="absolute top-6 left-6 border border-white/20 px-4 py-2 backdrop-blur-md">
                     <span className="font-montserrat text-[0.55rem] tracking-[0.3em] text-white uppercase">
-                      Est. 2025
+                      Est. 2022
                     </span>
                   </div>
                 </div>
@@ -200,8 +239,9 @@ export default async function AboutUsPage() {
                     <div className="bg-raisinBlack relative aspect-video w-full overflow-hidden">
                       <Image
                         src={item.imageUrl}
-                        alt={item.title}
+                        alt=""
                         fill
+                        sizes="(max-width: 1024px) 100vw, 800px"
                         className="object-cover opacity-80 transition-all duration-1500 group-hover:scale-105 group-hover:opacity-100"
                       />
                     </div>
@@ -233,6 +273,6 @@ export default async function AboutUsPage() {
           </Link>
         </FadeIn>
       </section>
-    </main>
+    </div>
   );
 }

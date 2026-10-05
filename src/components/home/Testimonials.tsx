@@ -1,24 +1,11 @@
 // src/components/home/Testimonials.tsx
 
-import Link from "next/link";
-import { defineQuery } from "next-sanity";
 import FadeIn from "@/components/ui/FadeIn";
-import { sanityFetch } from "@/sanity/lib/live";
+import { GOOGLE_REVIEW_URL, reviews } from "@/data/reviews";
 
-const REVIEWS_QUERY = defineQuery(`
-  *[_type == "review" && approved == true && featured == true][0...3] | order(_createdAt desc) {
-    _id,
-    name,
-    role,
-    text
-  }
-`);
-
-export default async function Testimonials() {
-  const { data: fetchedReviews } = await sanityFetch({ query: REVIEWS_QUERY });
-
-  // Łączymy to co przyszło z bazy z defaultowymi, bierzemy równe 3
-  const displayReviews = [...fetchedReviews].slice(0, 3);
+export default function Testimonials() {
+  // Opinie zapisane w kodzie (src/data/reviews.ts) – zero zapytań do CMS, sekcja w pełni statyczna
+  const displayReviews = reviews.slice(0, 3);
 
   // Konfiguracja stylów asymetrycznego widoku dla dokładnie 3 kart
   const cardConfigs = [
@@ -59,12 +46,20 @@ export default async function Testimonials() {
   ];
 
   return (
-    <section className="bg-philippineSilver relative z-10 w-full overflow-hidden py-32 lg:py-48">
+    <section
+      id="opinie"
+      className="bg-philippineSilver relative z-10 w-full overflow-hidden py-32 lg:py-48"
+    >
       {/* --- GŁĘBIA W TLE --- */}
-      <div className="pointer-events-none absolute top-1/2 left-1/2 z-0 w-full -translate-x-1/2 -translate-y-1/2 text-center select-none">
-        <span className="font-youngest text-[30vw] leading-none whitespace-nowrap text-white/30">
-          Recenzje
-        </span>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 left-1/2 z-0 w-full -translate-x-1/2 -translate-y-1/2 text-center select-none"
+      >
+        <span
+          aria-hidden="true"
+          data-deco="Recenzje"
+          className="font-youngest text-[30vw] leading-none whitespace-nowrap text-white/30 before:content-[attr(data-deco)]"
+        />
       </div>
 
       <div className="relative z-10 mx-auto w-full max-w-7xl px-6 lg:px-12">
@@ -90,64 +85,73 @@ export default async function Testimonials() {
         </div>
 
         {/* --- ASYMETRYCZNY KOLAŻ KART --- */}
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-0">
-          {displayReviews.map((review, index) => {
-            const config = cardConfigs[index];
-            return (
-              <FadeIn
-                key={review._id}
-                delay={config.delay}
-                className={config.wrapperClass}
-              >
-                <div className={config.cardClass}>
-                  <div className="absolute -top-8 -right-4 opacity-10 transition-transform duration-700 group-hover:scale-110 group-hover:-rotate-12 group-hover:opacity-20">
-                    <span
-                      className={`font-youngest text-[12rem] ${config.quoteColor}`}
+        {displayReviews.length > 0 && (
+          <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-0">
+            {displayReviews.map((review, index) => {
+              const config = cardConfigs[index];
+              return (
+                <FadeIn
+                  key={review.id}
+                  delay={config.delay}
+                  className={config.wrapperClass}
+                >
+                  <div className={config.cardClass}>
+                    <div
+                      aria-hidden="true"
+                      className="absolute -top-8 -right-4 opacity-10 transition-transform duration-700 group-hover:scale-110 group-hover:-rotate-12 group-hover:opacity-20"
                     >
-                      "
-                    </span>
-                  </div>
-                  <p
-                    className={`font-montserrat relative z-10 mb-10 text-lg leading-relaxed font-light ${config.textColor} lg:text-xl`}
-                  >
-                    {review.text}
-                  </p>
-                  <div className="relative z-10 flex items-center gap-4">
-                    <div className={`${config.lineColor} h-px w-8`} />
-                    <div>
-                      <h4
-                        className={`font-montserrat text-sm font-bold ${config.nameColor}`}
-                      >
-                        {review.name}
-                      </h4>
                       <span
-                        className={`font-montserrat text-[0.65rem] tracking-widest uppercase ${config.roleColor}`}
-                      >
-                        {review.role}
-                      </span>
+                        aria-hidden="true"
+                        data-deco='"'
+                        className={`font-youngest text-[12rem] ${config.quoteColor} before:content-[attr(data-deco)]`}
+                      />
                     </div>
+                    <p
+                      className={`font-montserrat relative z-10 mb-10 text-lg leading-relaxed font-light ${config.textColor} lg:text-xl`}
+                    >
+                      {review.text}
+                    </p>
+                    <div className="relative z-10 flex items-center gap-4">
+                      <div className={`${config.lineColor} h-px w-8`} />
+                      <div>
+                        <p
+                          className={`font-montserrat text-sm font-bold ${config.nameColor}`}
+                        >
+                          {review.name}
+                        </p>
+                        <span
+                          className={`font-montserrat text-[0.65rem] tracking-widest uppercase ${config.roleColor}`}
+                        >
+                          {review.role}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Dekoracyjna wjeżdżająca linia w ostatniej karcie - można ją zachować uwarunkowaną */}
+                    {index === 2 && (
+                      <div className="bg-arylideYellow absolute bottom-0 left-0 h-1 w-0 transition-all duration-700 group-hover:w-full" />
+                    )}
                   </div>
-                  {/* Dekoracyjna wjeżdżająca linia w ostatniej karcie - można ją zachować uwarunkowaną */}
-                  {index === 2 && (
-                    <div className="bg-arylideYellow absolute bottom-0 left-0 h-1 w-0 transition-all duration-700 group-hover:w-full" />
-                  )}
-                </div>
-              </FadeIn>
-            );
-          })}
-        </div>
+                </FadeIn>
+              );
+            })}
+          </div>
+        )}
 
-        {/* PRZYCISK PROWADZĄCY DO FORMULARZA OPINII */}
-        <div className="mt-24 flex justify-center lg:mt-32">
-          <FadeIn delay="400ms">
-            <Link
-              href="/opinie"
-              className="group border-raisinBlack font-montserrat text-raisinBlack hover:bg-raisinBlack relative inline-flex items-center justify-center gap-4 rounded-full border bg-transparent px-10 py-5 text-[0.65rem] font-bold tracking-[0.2em] uppercase transition-all duration-500 hover:text-white"
-            >
-              Dodaj swoją opinię lub przeczytaj więcej
-            </Link>
-          </FadeIn>
-        </div>
+        {/* Przycisk do opinii w Google – pojawia się po ustawieniu NEXT_PUBLIC_GOOGLE_REVIEW_URL */}
+        {GOOGLE_REVIEW_URL && (
+          <div className="mt-24 flex justify-center lg:mt-32">
+            <FadeIn delay="400ms">
+              <a
+                href={GOOGLE_REVIEW_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group border-raisinBlack font-montserrat text-raisinBlack hover:bg-raisinBlack relative inline-flex items-center justify-center gap-4 rounded-full border bg-transparent px-10 py-5 text-[0.65rem] font-bold tracking-[0.2em] uppercase transition-all duration-500 hover:text-white"
+              >
+                Dodaj swoją opinię lub przeczytaj więcej
+              </a>
+            </FadeIn>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { subscribeToNewsletter } from "@/actions/subscribe";
+import Honeypot from "@/components/ui/Honeypot";
+
+export const NEWSLETTER_SUBSCRIBED_KEY = "maxime_newsletter_subscribed";
 
 interface NewsletterFormProps {
   variant?: "dark" | "light";
@@ -14,6 +17,8 @@ export default function NewsletterForm({
   className = "",
 }: NewsletterFormProps) {
   const isDark = variant === "dark";
+  // Unikalne id – na jednej stronie bywa kilka formularzy (stopka + popup + sekcja)
+  const consentId = `rodo_${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
   const [status, setStatus] = useState<
     "idle" | "loading" | "success" | "error"
@@ -34,6 +39,10 @@ export default function NewsletterForm({
       setTimeout(() => setStatus("idle"), 3000);
     } else {
       setStatus("success");
+      try {
+        // Po zapisie nie pokazujemy już popupu newslettera
+        localStorage.setItem(NEWSLETTER_SUBSCRIBED_KEY, "1");
+      } catch {}
       // Zmieniony komunikat - Double Opt-in
       setMessage(
         "Prawie gotowe! Sprawdź swoją skrzynkę e-mail i kliknij w link, aby potwierdzić zapis.",
@@ -45,10 +54,12 @@ export default function NewsletterForm({
     <div className={`w-full ${className}`}>
       {status === "success" ? (
         <div
+          role="status"
           className={`animate-fade-in-up flex flex-col items-center justify-center p-4 text-center transition-all ${isDark ? "text-white" : "text-raisinBlack"}`}
         >
           <div className="bg-arylideYellow text-raisinBlack mb-3 flex h-12 w-12 items-center justify-center rounded-full">
             <svg
+              aria-hidden="true"
               className="h-6 w-6"
               fill="none"
               viewBox="0 0 24 24"
@@ -71,6 +82,7 @@ export default function NewsletterForm({
           onSubmit={handleSubmit}
           className="group relative flex w-full flex-col"
         >
+          <Honeypot />
           {/* POLE INPUT I PRZYCISK */}
           <div className="relative flex w-full items-end">
             <div
@@ -84,6 +96,11 @@ export default function NewsletterForm({
                 type="email"
                 name="email"
                 placeholder="Twój adres e-mail"
+                aria-label="Twój adres e-mail"
+                autoComplete="email"
+                inputMode="email"
+                maxLength={254}
+                aria-invalid={status === "error" || undefined}
                 required
                 disabled={status === "loading"}
                 className={`font-montserrat w-full bg-transparent outline-none placeholder:font-light disabled:opacity-50 ${
@@ -106,6 +123,7 @@ export default function NewsletterForm({
             >
               {status === "loading" ? (
                 <svg
+                  aria-hidden="true"
                   className="h-5 w-5 animate-spin"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
@@ -132,10 +150,8 @@ export default function NewsletterForm({
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                   strokeWidth={isDark ? 2 : 2.5}
+                  aria-hidden="true"
                 >
-                  <title>
-                    {isDark ? "Wpisz swój email" : "Strzałka wyślij"}
-                  </title>
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -152,7 +168,10 @@ export default function NewsletterForm({
 
           {/* BŁĄD SYSTEMU */}
           {status === "error" && message && (
-            <span className="font-montserrat mt-3 text-[0.65rem] font-bold text-red-400">
+            <span
+              role="alert"
+              className="font-montserrat mt-3 text-[0.65rem] font-bold text-red-400"
+            >
               {message}
             </span>
           )}
@@ -161,25 +180,26 @@ export default function NewsletterForm({
           <div className="mt-6 flex items-start gap-3">
             {/* ZMIANA 1: Zmieniono div na <label> z htmlFor. Teraz kwadracik reaguje na kliknięcia */}
             <label
-              htmlFor={`rodo_${variant}`}
+              htmlFor={consentId}
               className="relative mt-[0.15rem] flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center"
             >
               <input
                 type="checkbox"
                 required
                 name="rodo_consent"
-                id={`rodo_${variant}`}
+                id={consentId}
                 disabled={status === "loading"}
                 className="peer sr-only"
               />
               <div
                 className={`h-4 w-4 rounded-sm border transition-all duration-300 ${
                   isDark
-                    ? "peer-checked:border-arylideYellow peer-checked:bg-arylideYellow peer-focus:ring-arylideYellow/50 border-white/30 peer-focus:ring-2"
-                    : "border-raisinBlack/30 peer-checked:border-raisinBlack peer-checked:bg-raisinBlack peer-focus:ring-raisinBlack/50 peer-focus:ring-2"
+                    ? "peer-checked:border-arylideYellow peer-checked:bg-arylideYellow peer-focus-visible:ring-arylideYellow/50 border-white/30 peer-focus-visible:ring-2"
+                    : "border-raisinBlack/30 peer-checked:border-raisinBlack peer-checked:bg-raisinBlack peer-focus-visible:ring-raisinBlack/50 peer-focus-visible:ring-2"
                 }`}
               />
               <svg
+                aria-hidden="true"
                 className={`absolute h-3 w-3 opacity-0 transition-opacity duration-300 peer-checked:opacity-100 ${
                   isDark ? "text-oxfordBlue" : "text-arylideYellow"
                 }`}
@@ -203,14 +223,13 @@ export default function NewsletterForm({
               }`}
             >
               <label
-                htmlFor={`rodo_${variant}`}
+                htmlFor={consentId}
                 className={`cursor-pointer transition-colors ${
                   isDark ? "hover:text-white/60" : "hover:text-raisinBlack/70"
                 }`}
               >
                 Wyrażam zgodę na otrzymywanie informacji handlowych (Newsletter)
-                drogą elektroniczną od Fundacji Maxime. Zapoznałem/am się
-                z{" "}
+                drogą elektroniczną od Fundacji Maxime. Zapoznałem/am się z{" "}
               </label>
               <Link
                 href="/polityka-prywatnosci"

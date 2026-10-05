@@ -2,44 +2,43 @@ import type { Metadata, Viewport } from "next";
 import { Montserrat } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import { SanityLive } from "@/sanity/lib/live";
+import ConsentAnalytics from "@/components/analytics/ConsentAnalytics";
+import GoogleConsent from "@/components/cookies/GoogleConsent";
+import { FADE_IN_SCRIPT } from "@/components/ui/FadeIn";
+import {
+  DEFAULT_DESCRIPTION,
+  DEFAULT_OG_IMAGE,
+  DEFAULT_TITLE,
+  SITE_NAME,
+  SITE_TAGLINE,
+  SITE_URL,
+} from "@/lib/site";
 
-// Zdefiniuj kolor motywu dla urządzeń mobilnych
 export const viewport: Viewport = {
-  themeColor: "#212121", // Odpowiednik bg-raisinBlack
+  themeColor: "#262626", // bg-raisinBlack
   colorScheme: "dark",
 };
 
+// Weryfikacja Google Search Console / Bing Webmaster Tools (metoda „tag HTML”)
+const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
+const bingVerification = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION;
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://fundacja-maxime.vercel.app/"), // ⚠️ ZMIEŃ NA SWOJĄ DOCELOWĄ DOMENĘ
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Fundacja Maxime | Z pasji do muzyki",
-    template: "%s | Fundacja Maxime", // Generuje np. "O nas | Stowarzyszenie Maxime" na podstronach
+    default: DEFAULT_TITLE,
+    template: `%s | ${SITE_NAME}`,
   },
-  description:
-    "Odkryj z nami piękno dźwięków. Talent, ambicja i profesjonalizm, które tworzą niezapomniane emocje. Jesteśmy orkiestrą i Fundacją Maxime.",
-  keywords: [
-    "stowarzyszenie muzyczne",
-    "Maxime",
-    "Stowarzyszenie Maxime",
-    "Fundacja Maxime",
-    "orkiestra",
-    "muzyka",
-    "koncerty",
-    "pasja do muzyki",
-    "wydarzenia muzyczne",
-  ],
-  authors: [{ name: "Fundacja Maxime" }],
-  creator: "Fundacja Maxime",
-  publisher: "Fundacja Maxime",
-  alternates: {
-    canonical: "/", // Wskazuje Google'owi główny, oryginalny adres strony
-  },
+  description: DEFAULT_DESCRIPTION,
+  applicationName: SITE_NAME,
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  category: "music",
+  formatDetection: { telephone: false, email: false, address: false },
   robots: {
-    index: true, // Zezwala Google na indeksowanie strony
-    follow: true, // Zezwala Google na podążanie za linkami
+    index: true,
+    follow: true,
     googleBot: {
       index: true,
       follow: true,
@@ -51,27 +50,33 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "pl_PL",
-    url: "https://fundacja-maxime.vercel.app/", // ⚠️ ZMIEŃ NA SWOJĄ DOMENĘ
-    siteName: "Stowarzyszenie Maxime",
-    title: "Stowarzyszenie Maxime | Z pasji do muzyki",
-    description:
-      "Odkryj z nami piękno dźwięków. Talent, ambicja i profesjonalizm, które tworzą niezapomniane emocje.",
+    url: "/",
+    siteName: SITE_NAME,
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
     images: [
       {
-        url: "/video-poster.webp", // ⚠️ DODAJ ZDJĘCIE o nazwie og-image.webp do folderu public/
+        url: DEFAULT_OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: "Fundacja Maxime - Z pasji do muzyki",
+        alt: `${SITE_NAME} – ${SITE_TAGLINE}`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Fundacja Maxime | Z pasji do muzyki",
-    description:
-      "Odkryj z nami piękno dźwięków. Talent, ambicja i profesjonalizm, które tworzą niezapomniane emocje.",
-    images: ["/video-poster.webp"], // ⚠️ DODAJ ZDJĘCIE jw.
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE],
   },
+  ...((googleVerification || bingVerification) && {
+    verification: {
+      ...(googleVerification && { google: googleVerification }),
+      ...(bingVerification && {
+        other: { "msvalidate.01": bingVerification },
+      }),
+    },
+  }),
 };
 
 const montserrat = Montserrat({
@@ -80,6 +85,7 @@ const montserrat = Montserrat({
   display: "swap",
 });
 
+// Czcionka odręczna – przycięta do znaków łacińskich i polskich (165 KB → 32 KB)
 const fontYoungest = localFont({
   src: "../fonts/the-youngest-script.woff2",
   variable: "--font-youngest",
@@ -91,35 +97,26 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Dane strukturalne dla Google (Schema.org) - pomaga wygenerować ładniejszą wizytówkę w wyszukiwarce
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "MusicGroup", // Typ "MusicGroup" jest idealny dla orkiestry/stowarzyszenia muzycznego
-    name: "Fundacja Maxime",
-    url: "https://www.twojadomena.pl",
-    description:
-      "Odkryj z nami piękno dźwięków. Talent, ambicja i profesjonalizm, które tworzą niezapomniane emocje.",
-    sameAs: [
-      "https://www.facebook.com/TwójFanpage", // ⚠️ Dodaj linki do social mediów, jeśli masz
-      "https://www.instagram.com/TwójInstagram",
-    ],
-  };
-
   return (
-    <html lang="pl">
+    <html lang="pl" data-scroll-behavior="smooth">
       <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
+        {/* Bez JavaScriptu treść animowana przez FadeIn jest od razu widoczna (roboty, czytniki) */}
+        <noscript>
+          <style>{`[data-fade]{opacity:1!important;translate:none!important;scale:none!important}`}</style>
+        </noscript>
       </head>
       <body
         className={`${montserrat.variable} ${fontYoungest.variable} bg-raisinBlack font-montserrat selection:bg-arylideYellow selection:text-raisinBlack text-white antialiased`}
       >
+        {/* Domyślny stan zgód Google Consent Mode v2 (wszystko „denied” do decyzji użytkownika) */}
+        <GoogleConsent />
         {children}
-        <SanityLive />
-        <SpeedInsights />
-        <Analytics />
+        {/* Animacje wejścia sterowane jednym lekkim skryptem zamiast setek komponentów React */}
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: statyczny skrypt, bez danych użytkownika
+          dangerouslySetInnerHTML={{ __html: FADE_IN_SCRIPT }}
+        />
+        <ConsentAnalytics />
       </body>
     </html>
   );

@@ -1,36 +1,37 @@
 // src/app/(user)/page.tsx
-import { Suspense } from "react";
 import About from "@/components/home/About";
 import CallToAction from "@/components/home/CallToAction";
 import Hero from "@/components/home/Hero";
 import LatestUpdates from "@/components/home/LatestUpdates";
 import Testimonials from "@/components/home/Testimonials";
 import Values from "@/components/home/Values";
+import JsonLd from "@/components/seo/JsonLd";
+import {
+  DEFAULT_DESCRIPTION,
+  DEFAULT_TITLE,
+  pageJsonLd,
+  pageMetadata,
+} from "@/lib/site";
+
+// Strona w całości statyczna (ISR) – Suspense nie jest potrzebny, HTML trafia z CDN od razu kompletny
+export const metadata = pageMetadata({ path: "/" });
 
 export default function HomePage() {
   return (
-    <main className="bg-raisinBlack flex min-h-screen flex-col">
+    <div className="bg-raisinBlack flex min-h-screen flex-col">
+      <JsonLd
+        data={pageJsonLd({
+          name: DEFAULT_TITLE,
+          description: DEFAULT_DESCRIPTION,
+          path: "/",
+        })}
+      />
       <Hero />
-
-      <Suspense fallback={null}>
-        <About />
-      </Suspense>
-
-      <Suspense fallback={null}>
-        <Testimonials />
-      </Suspense>
-
-      <Suspense fallback={null}>
-        <LatestUpdates />
-      </Suspense>
-
-      <Suspense fallback={null}>
-        <Values />
-      </Suspense>
-
-      <Suspense fallback={null}>
-        <CallToAction />
-      </Suspense>
-    </main>
+      <About />
+      <Testimonials />
+      <LatestUpdates />
+      <Values />
+      <CallToAction />
+    </div>
   );
 }

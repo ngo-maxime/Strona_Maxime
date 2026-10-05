@@ -2,54 +2,104 @@
 "use server";
 
 import { Resend } from "resend";
+import {
+  escapeHtml,
+  field,
+  getClientIp,
+  HONEYPOT_FIELD,
+  isValidEmail,
+  rateLimit,
+  singleLine,
+} from "@/lib/security";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const ALLOWED_SUBJECTS = [
+  "Współpraca",
+  "Bilety i Wydarzenia",
+  "Dla Prasy",
+  "Dołączenie do zespołu",
+  "Inne",
+];
+
+const REQUIRED_ERROR = "Wszystkie podstawowe pola są wymagane.";
+const GENERIC_ERROR = "Wystąpił nieoczekiwany błąd serwera.";
 
 export async function sendEmail(formData: FormData) {
-  // Pobieramy dane z formularza
-  const name = formData.get("name") as string;
-  const email = formData.get("email") as string;
-  const message = formData.get("message") as string;
-  const subjectCategory = formData.get("subjectCategory") as string;
-  const customSubject = formData.get("customSubject") as string;
+  // Honeypot – bot dostaje „sukces”, ale wiadomość nie jest wysyłana
+  if (field(formData, HONEYPOT_FIELD, 200)) return { success: true };
 
-  // Ustalamy ostateczny temat wiadomości
+  // Pobieramy dane z formularza (z limitami długości)
+  const name = singleLine(field(formData, "name", 120));
+  const email = singleLine(field(formData, "email", 254));
+  const message = field(formData, "message", 5000);
+  const rawCategory = field(formData, "subjectCategory", 60);
+  const customSubject = singleLine(field(formData, "customSubject", 150));
+
+  const subjectCategory = ALLOWED_SUBJECTS.includes(rawCategory)
+    ? rawCategory
+    : "Inne";
+
   const finalSubject =
     subjectCategory === "Inne" && customSubject
       ? `Inne: ${customSubject}`
       : subjectCategory;
 
-  // Prosta walidacja na backendzie
-  if (!name || !email || !message) {
-    return { error: "Wszystkie podstawowe pola są wymagane." };
+  // Walidacja na backendzie
+  if (!name || !email || !message || !isValidEmail(email)) {
+    return { error: REQUIRED_ERROR };
   }
 
+  const ip = await getClientIp();
+  if (!rateLimit(`contact:${ip}`, 5, 10 * 60 * 1000)) {
+    return { error: GENERIC_ERROR };
+  }
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.error("Brak zmiennej środowiskowej RESEND_API_KEY");
+    return { error: GENERIC_ERROR };
+  }
+
+  const resend = new Resend(apiKey);
+
+  // Wszystkie dane użytkownika są escapowane – brak możliwości wstrzyknięcia HTML do maila
+  const safe = {
+    name: escapeHtml(name),
+    email: escapeHtml(email),
+    subject: escapeHtml(finalSubject),
+    message: escapeHtml(message),
+  };
+
   try {
-    const data = await resend.emails.send({
-      // WAŻNE: Na darmowym koncie Resend musisz wysyłać Z adresu onboarding@resend.dev
-      // DO adresu e-mail, na którym założyłeś konto w Resend.
-      // Gdy dodasz własną domenę (np. stowarzyszeniemaxime.pl), zmienisz "from".
-      from: "Strona Maxime <onboarding@resend.dev>",
-      to: ["f.w9@interia.pl"], // <-- ZMIEŃ NA SWÓJ E-MAIL!
+    const { error } = await resend.emails.send({
+      // Na darmowym koncie Resend wysyłka z onboarding@resend.dev.
+      // Po weryfikacji własnej domeny ustaw CONTACT_FROM_EMAIL (np. "Strona Maxime <formularz@twojadomena.pl>").
+      from:
+        process.env.CONTACT_FROM_EMAIL ||
+        "Strona Maxime <onboarding@resend.dev>",
+      to: [process.env.CONTACT_TO_EMAIL || "f.w9@interia.pl"],
       subject: `[Maxime Web] Nowa wiadomość: ${finalSubject}`,
-      replyTo: email, // Dzięki temu klikając "Odpowiedz", odpiszesz nadawcy
+      replyTo: email,
+      text: `Od: ${name} (${email})\nTemat: ${finalSubject}\n\n${message}`,
       html: `
         <div style="font-family: sans-serif; color: #111;">
           <h2>Nowa wiadomość ze strony internetowej Maxime</h2>
-          <p><strong>Od:</strong> ${name} (${email})</p>
-          <p><strong>Temat:</strong> ${finalSubject}</p>
+          <p><strong>Od:</strong> ${safe.name} (${safe.email})</p>
+          <p><strong>Temat:</strong> ${safe.subject}</p>
           <hr />
-          <p style="white-space: pre-wrap; font-size: 16px;">${message}</p>
+          <p style="white-space: pre-wrap; font-size: 16px;">${safe.message}</p>
         </div>
       `,
     });
 
-    if (data.error) {
-      return { error: data.error.message };
+    if (error) {
+      // Szczegóły błędu tylko w logach – użytkownik nie widzi wewnętrznych komunikatów API
+      console.error("Błąd Resend:", error);
+      return { error: GENERIC_ERROR };
     }
 
     return { success: true };
-  } catch (_error) {
-    return { error: "Wystąpił nieoczekiwany błąd serwera." };
+  } catch (err) {
+    console.error("Błąd serwera (formularz kontaktowy):", err);
+    return { error: GENERIC_ERROR };
   }
 }

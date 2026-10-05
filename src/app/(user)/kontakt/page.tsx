@@ -1,46 +1,67 @@
 // BRAK "use client"! To teraz Server Component
 import Image from "next/image";
-import { defineQuery } from "next-sanity";
 import ContactForm from "@/components/contact/ContactForm";
 import CopyableContact from "@/components/contact/CopyableContact"; // <-- Nasz nowy interaktywny przycisk
+import JsonLd from "@/components/seo/JsonLd";
 import FadeIn from "@/components/ui/FadeIn";
 import { getSocialIcon } from "@/data/navigation";
-import { sanityFetch } from "@/sanity/lib/live";
+import { ORGANIZATION, pageJsonLd, pageMetadata } from "@/lib/site";
+import { getSiteSettings } from "@/sanity/lib/settings";
 
-// Definiujemy query bezpośrednio na stronie
-const SETTINGS_QUERY = defineQuery(`
-  *[_type == "siteSettings"][0] {
-    contact { address, email, phone },
-    socials[] { platform, url }
-  }
-`);
+export const metadata = pageMetadata({
+  title: "Kontakt",
+  description:
+    "Skontaktuj się z Fundacją Maxime z Dąbrowy Górniczej – współpraca, oprawa muzyczna wydarzeń, bilety, dołączenie do orkiestry. Odezwij się do nas!",
+  path: "/kontakt",
+});
 
 export default async function ContactPage() {
-  // Pobieramy dane na serwerze!
-  const { data } = await sanityFetch({ query: SETTINGS_QUERY });
-
-  // Wartości z Sanity
-  const contact = data?.contact || { email: "", phone: "", address: "" };
-  const socials = data?.socials || [];
+  // Ustawienia z Sanity (to samo zapytanie co menu i stopka – wykonywane raz na render)
+  const settings = await getSiteSettings();
+  const { address } = ORGANIZATION;
+  const contact = {
+    email: settings.contact?.email || ORGANIZATION.email,
+    phone: settings.contact?.phone || ORGANIZATION.phone,
+    address:
+      settings.contact?.address ||
+      `${address.street}\n${address.postalCode} ${address.city}`,
+  };
+  const socials = settings.socials || [];
 
   return (
-    <main className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full overflow-hidden">
+    <div className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full overflow-hidden">
+      <JsonLd
+        data={pageJsonLd({
+          type: "ContactPage",
+          name: "Kontakt",
+          description:
+            "Skontaktuj się z Fundacją Maxime z Dąbrowy Górniczej – współpraca, oprawa muzyczna wydarzeń, bilety, dołączenie do orkiestry. Odezwij się do nas!",
+          path: "/kontakt",
+          crumb: "Kontakt",
+        })}
+      />
       {/* TŁO */}
       <div className="pointer-events-none fixed -top-64 -right-64 z-0 h-200 w-200 opacity-3 lg:-top-40 lg:-right-40 lg:h-300 lg:w-300">
         <Image
           src="/Asset-2.svg"
           alt=""
           fill
+          sizes="1200px"
           className="animate-[spin_120s_linear_infinite] object-contain brightness-0 invert"
         />
       </div>
 
       {/* HERO SECTION */}
       <section className="relative z-10 flex min-h-[70vh] w-full flex-col justify-end px-6 pt-40 pb-24 lg:min-h-[85vh] lg:px-12 lg:pb-32">
-        <div className="pointer-events-none absolute top-1/2 left-0 z-0 -translate-y-1/2 opacity-2 mix-blend-overlay select-none">
-          <span className="font-montserrat text-[25vw] leading-none font-black whitespace-nowrap text-white">
-            KONTAKT
-          </span>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-0 z-0 -translate-y-1/2 opacity-2 mix-blend-overlay select-none"
+        >
+          <span
+            aria-hidden="true"
+            data-deco="KONTAKT"
+            className="font-montserrat text-[25vw] leading-none font-black whitespace-nowrap text-white before:content-[attr(data-deco)]"
+          />
         </div>
 
         <div className="relative z-10 mx-auto w-full max-w-7xl">
@@ -136,23 +157,29 @@ export default async function ContactPage() {
           </span>
         </FadeIn>
         <div className="mx-auto mt-12 flex max-w-4xl flex-wrap justify-center gap-4 px-6 md:gap-8">
-          {socials.map((social: any, index: number) => (
-            <FadeIn key={social.platform} delay={`${index * 150}ms`}>
-              <a
-                href={social.url}
-                target="_blank"
-                rel="noreferrer"
-                className="group font-montserrat hover:border-arylideYellow hover:bg-arylideYellow hover:text-raisinBlack flex items-center gap-3 rounded-full border border-white/10 bg-transparent px-8 py-4 text-sm font-bold tracking-widest text-white uppercase transition-all duration-500 hover:-translate-y-1 md:px-10 md:py-5 md:text-base"
-              >
-                <div className="scale-125 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-12">
-                  {getSocialIcon(social.platform)}
-                </div>
-                <span className="hidden sm:block">{social.platform}</span>
-              </a>
-            </FadeIn>
-          ))}
+          {socials.map(
+            (social: { platform: string; url: string }, index: number) => (
+              <FadeIn key={social.platform} delay={`${index * 150}ms`}>
+                <a
+                  href={social.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.platform}
+                  className="group font-montserrat hover:border-arylideYellow hover:bg-arylideYellow hover:text-raisinBlack flex items-center gap-3 rounded-full border border-white/10 bg-transparent px-8 py-4 text-sm font-bold tracking-widest text-white uppercase transition-all duration-500 hover:-translate-y-1 md:px-10 md:py-5 md:text-base"
+                >
+                  <div
+                    aria-hidden="true"
+                    className="scale-125 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-12"
+                  >
+                    {getSocialIcon(social.platform)}
+                  </div>
+                  <span className="hidden sm:block">{social.platform}</span>
+                </a>
+              </FadeIn>
+            ),
+          )}
         </div>
       </section>
-    </main>
+    </div>
   );
 }

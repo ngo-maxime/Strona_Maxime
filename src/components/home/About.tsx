@@ -1,17 +1,33 @@
 // src/components/home/About.tsx
 import Image from "next/image";
 import Link from "next/link";
+import CmsImage from "@/components/ui/CmsImage";
 import FadeIn from "@/components/ui/FadeIn";
+import {
+  getSiteSettings,
+  hotspotPosition,
+  yearsOnStage,
+} from "@/sanity/lib/settings";
 
-export default function About() {
+export default async function About() {
+  const settings = await getSiteSettings();
+  const events = settings.stats?.events ?? 50;
+  // Zdjęcie z Sanity (Ustawienia strony → Zdjęcia sekcji „O nas”), awaryjnie kadr z koncertu
+  const photo = settings.homeAboutImage;
+
   return (
-    <section className="bg-raisinBlack relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden py-24 xl:py-32">
+    <section className="bg-raisinBlack relative flex min-h-svh w-full flex-col items-center justify-center overflow-hidden py-24 xl:py-32">
       {/* 1. ULTRA DELIKATNE TŁO */}
-      <div className="pointer-events-none absolute top-1/2 left-1/2 z-0 w-full -translate-x-1/2 -translate-y-1/2 text-center select-none">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 left-1/2 z-0 w-full -translate-x-1/2 -translate-y-1/2 text-center select-none"
+      >
         <FadeIn delay="0ms">
-          <span className="font-youngest text-[20vw] whitespace-nowrap text-white/2">
-            Maxime
-          </span>
+          <span
+            aria-hidden="true"
+            data-deco="Maxime"
+            className="font-youngest text-[20vw] whitespace-nowrap text-white/2 before:content-[attr(data-deco)]"
+          />
         </FadeIn>
       </div>
 
@@ -21,6 +37,7 @@ export default function About() {
             src="/Asset-1.svg"
             alt=""
             fill
+            sizes="640px"
             className="object-contain brightness-0 invert"
           />
         </FadeIn>
@@ -35,10 +52,14 @@ export default function About() {
               {/* ZMIANA: Dodano border-white/10 oraz shadow-2xl do głównego kontenera */}
               <div className="group bg-raisinBlack relative aspect-3/4 w-full overflow-hidden border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                 <div className="absolute inset-0 h-full w-full">
-                  <Image
-                    src="/video-poster.webp"
-                    alt="Muzycy Stowarzyszenia Maxime"
+                  <CmsImage
+                    src={photo?.url || "/video-poster.webp"}
+                    alt={photo?.alt || "Muzycy Fundacji Maxime"}
                     fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 550px, 40vw"
+                    placeholder={photo?.lqip ? "blur" : "empty"}
+                    blurDataURL={photo?.lqip}
+                    style={{ objectPosition: hotspotPosition(photo) }}
                     className="object-cover transition-transform duration-1500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105"
                   />
                 </div>
@@ -57,7 +78,7 @@ export default function About() {
             >
               <div className="flex flex-col items-start border-r border-white/5 pr-6 lg:pr-8 xl:pr-10">
                 <span className="font-montserrat text-3xl font-light tracking-tight text-white lg:text-4xl">
-                  4
+                  {yearsOnStage()}
                   <span className="text-arylideYellow relative -top-2 ml-0.5 text-2xl font-light lg:text-3xl">
                     +
                   </span>
@@ -68,7 +89,7 @@ export default function About() {
               </div>
               <div className="flex flex-col items-start pl-6 lg:pl-8 xl:pl-10">
                 <span className="font-montserrat text-3xl font-light tracking-tight text-white lg:text-4xl">
-                  50
+                  {events}
                   <span className="text-arylideYellow relative -top-2 ml-0.5 text-2xl font-light lg:text-3xl">
                     +
                   </span>

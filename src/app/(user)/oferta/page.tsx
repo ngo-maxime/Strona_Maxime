@@ -1,18 +1,26 @@
 // src/app/(user)/oferta/page.tsx
-import type { Metadata } from "next";
 import Image from "next/image";
 import ContactForm from "@/components/contact/ContactForm";
 import OfferStats from "@/components/offer/OfferStats";
+import JsonLd from "@/components/seo/JsonLd";
 import FadeIn from "@/components/ui/FadeIn";
+import {
+  ORGANIZATION,
+  ORGANIZATION_ID,
+  pageJsonLd,
+  pageMetadata,
+  SITE_URL,
+} from "@/lib/site";
+import { getSiteSettings } from "@/sanity/lib/settings";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
+  // Tytuł bez doklejania „| Fundacja Maxime” (marka jest już w tytule)
   title: "Oferta Eventowa | Fundacja i Orkiestra Maxime",
+  absoluteTitle: true,
   description:
     "Kompleksowa oprawa muzyczna wydarzeń: eventy firmowe, imprezy okolicznościowe oraz wielkie koncerty plenerowe i Dni Miast. Projekty szyte na miarę.",
-  alternates: {
-    canonical: "/oferta",
-  },
-};
+  path: "/oferta",
+});
 
 const eventTypes = [
   {
@@ -81,9 +89,50 @@ const howWeWork = [
   },
 ];
 
-export default function OfertaPage() {
+export default async function OfertaPage() {
+  const settings = await getSiteSettings();
+
+  // Dane strukturalne usług – oferta orkiestry widoczna dla Google jako konkretne usługi
+  const serviceJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "@id": `${SITE_URL}/oferta#uslugi`,
+    serviceType: "Oprawa muzyczna wydarzeń",
+    name: "Oprawa muzyczna wydarzeń – orkiestra Maxime",
+    url: `${SITE_URL}/oferta`,
+    provider: { "@id": ORGANIZATION_ID },
+    areaServed: [
+      { "@type": "City", name: ORGANIZATION.address.city },
+      { "@type": "AdministrativeArea", name: "województwo śląskie" },
+      { "@type": "Country", name: "Polska" },
+    ],
+    hasOfferCatalog: {
+      "@type": "OfferCatalog",
+      name: "Oferta eventowa",
+      itemListElement: eventTypes.map((type) => ({
+        "@type": "Offer",
+        itemOffered: {
+          "@type": "Service",
+          name: type.title,
+          description: `${type.subtitle}. ${type.description}`,
+        },
+      })),
+    },
+  };
+
   return (
-    <main className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full overflow-x-hidden">
+    <div className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full overflow-x-hidden">
+      <JsonLd data={serviceJsonLd} />
+      <JsonLd
+        data={pageJsonLd({
+          type: "WebPage",
+          name: "Oferta Eventowa | Fundacja i Orkiestra Maxime",
+          description:
+            "Kompleksowa oprawa muzyczna wydarzeń: eventy firmowe, imprezy okolicznościowe oraz wielkie koncerty plenerowe i Dni Miast. Projekty szyte na miarę.",
+          path: "/oferta",
+          crumb: "Oferta",
+        })}
+      />
       {/* ============================================================== */}
       {/* 1. HERO W STYLU AGENCJI EVENTOWEJ (MOCNY PRZEKAZ) */}
       {/* ============================================================== */}
@@ -94,13 +143,19 @@ export default function OfertaPage() {
             src="/Asset-1.svg"
             alt=""
             fill
+            sizes="900px"
             className="object-contain brightness-0 invert"
           />
         </div>
-        <div className="pointer-events-none absolute top-1/2 left-0 z-0 -translate-y-1/2 opacity-[0.02] mix-blend-overlay select-none">
-          <span className="font-montserrat text-[24vw] leading-none font-black whitespace-nowrap text-white">
-            EVENTY
-          </span>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-0 z-0 -translate-y-1/2 opacity-[0.02] mix-blend-overlay select-none"
+        >
+          <span
+            aria-hidden="true"
+            data-deco="EVENTY"
+            className="font-montserrat text-[24vw] leading-none font-black whitespace-nowrap text-white before:content-[attr(data-deco)]"
+          />
         </div>
 
         <div className="relative z-10 mx-auto w-full max-w-7xl">
@@ -138,6 +193,7 @@ export default function OfertaPage() {
             >
               Zapytaj o termin
               <svg
+                aria-hidden="true"
                 className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -164,7 +220,7 @@ export default function OfertaPage() {
       {/* ============================================================== */}
       {/* 2. ANIMOWANE LICZNIKI (0 -> DOCELOWA WARTOŚĆ) */}
       {/* ============================================================== */}
-      <OfferStats />
+      <OfferStats values={settings.stats} />
 
       {/* ============================================================== */}
       {/* 3. TRZY GŁÓWNE KATEGORIE WYDARZEŃ (W STYLU XTRAINING) */}
@@ -242,6 +298,7 @@ export default function OfertaPage() {
                     >
                       <span>Porozmawiajmy o tym evencie</span>
                       <svg
+                        aria-hidden="true"
                         className="h-3.5 w-3.5 transition-transform duration-300 group-hover/link:translate-x-1"
                         fill="none"
                         viewBox="0 0 24 24"
@@ -293,9 +350,9 @@ export default function OfertaPage() {
                     <span className="font-montserrat text-arylideYellow mb-6 block text-4xl font-black">
                       {item.step}
                     </span>
-                    <h4 className="font-montserrat mb-4 text-xl font-bold text-white">
+                    <h3 className="font-montserrat mb-4 text-xl font-bold text-white">
                       {item.title}
-                    </h4>
+                    </h3>
                     <p className="font-montserrat text-xs leading-relaxed font-light text-white/60 sm:text-sm">
                       {item.desc}
                     </p>
@@ -314,6 +371,6 @@ export default function OfertaPage() {
       <div id="formularz-kontaktowy">
         <ContactForm />
       </div>
-    </main>
+    </div>
   );
 }

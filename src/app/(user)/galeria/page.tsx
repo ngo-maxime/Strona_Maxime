@@ -1,10 +1,20 @@
 // src/app/(user)/galeria/page.tsx
 
-import Image from "next/image";
 import Link from "next/link";
 import { defineQuery } from "next-sanity";
+import JsonLd from "@/components/seo/JsonLd";
+import Image from "@/components/ui/CmsImage";
 import FadeIn from "@/components/ui/FadeIn";
-import { sanityFetch } from "@/sanity/lib/live";
+import { parsePlainDate } from "@/lib/date";
+import { pageJsonLd, pageMetadata } from "@/lib/site";
+import { sanityFetch } from "@/sanity/lib/fetch";
+
+export const metadata = pageMetadata({
+  title: "Galeria zdjęć z koncertów",
+  description:
+    "Muzyka to ulotna sztuka zanikająca wraz z wyciszeniem ostatniego akordu. Fotografia pozwala nam zatrzymać ten moment w czasie.",
+  path: "/galeria",
+});
 
 export interface AlbumProps {
   id: string;
@@ -12,6 +22,16 @@ export interface AlbumProps {
   count: number;
   year: string;
   image: string;
+  lqip?: string;
+}
+
+interface RawAlbum {
+  id: string;
+  title?: string;
+  date?: string;
+  image?: string;
+  lqip?: string;
+  count?: number;
 }
 
 const GALLERY_QUERY = defineQuery(`
@@ -20,29 +40,47 @@ const GALLERY_QUERY = defineQuery(`
     title,
     date,
     "image": coverImage.asset->url,
+    "lqip": coverImage.asset->metadata.lqip,
     "count": count(photos)
   }
 `);
 
-function formatAlbumData(rawAlbum: any): AlbumProps {
-  const d = rawAlbum.date ? new Date(rawAlbum.date) : new Date();
+function formatAlbumData(rawAlbum: RawAlbum): AlbumProps {
+  const year = rawAlbum.date
+    ? parsePlainDate(rawAlbum.date).year
+    : new Date().getFullYear();
 
   return {
     id: rawAlbum.id,
     title: rawAlbum.title || "Bez tytułu",
     count: rawAlbum.count || 0,
-    year: String(d.getFullYear()),
+    year: String(year),
     image: rawAlbum.image || "/video-poster.webp",
+    lqip: rawAlbum.lqip,
   };
 }
 
 // Główny i jedyny komponent strony (Server Component)
 export default async function GalleryPage() {
   const { data } = await sanityFetch({ query: GALLERY_QUERY });
-  const albumsData = data.map(formatAlbumData);
+  const albumsData = (data ?? []).map(formatAlbumData);
 
   return (
-    <main className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full overflow-x-hidden">
+    <div className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full overflow-x-hidden">
+      <JsonLd
+        data={pageJsonLd({
+          type: "CollectionPage",
+          name: "Galeria zdjęć z koncertów",
+          description:
+            "Muzyka to ulotna sztuka zanikająca wraz z wyciszeniem ostatniego akordu. Fotografia pozwala nam zatrzymać ten moment w czasie.",
+          path: "/galeria",
+          crumb: "Galeria",
+          items: albumsData.map((a: { title: string; id: string }) => ({
+            name: a.title,
+            path: `/galeria/${a.id}`,
+          })),
+        })}
+      />
       {/* HERO SECTION */}
       <section className="relative z-10 flex min-h-[65vh] w-full flex-col justify-center px-6 pt-32 lg:px-12 lg:pt-40">
         <div className="pointer-events-none absolute top-10 -left-32 z-0 h-150 w-150 opacity-[0.03] lg:-top-10 lg:-left-20 lg:h-250 lg:w-250">
@@ -50,14 +88,19 @@ export default async function GalleryPage() {
             src="/Asset-2.svg"
             alt=""
             fill
-            priority
+            sizes="1000px"
             className="object-contain brightness-0 invert"
           />
         </div>
-        <div className="pointer-events-none absolute top-1/2 right-0 z-0 translate-x-[10%] -translate-y-1/2 opacity-[0.02] mix-blend-overlay select-none">
-          <span className="font-montserrat text-[22vw] leading-none font-black whitespace-nowrap text-white">
-            GALERIA
-          </span>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 right-0 z-0 translate-x-[10%] -translate-y-1/2 opacity-[0.02] mix-blend-overlay select-none"
+        >
+          <span
+            aria-hidden="true"
+            data-deco="GALERIA"
+            className="font-montserrat text-[22vw] leading-none font-black whitespace-nowrap text-white before:content-[attr(data-deco)]"
+          />
         </div>
 
         <div className="relative z-10 mx-auto w-full max-w-7xl">
@@ -106,13 +149,24 @@ export default async function GalleryPage() {
                   >
                     <Image
                       src={album.image}
-                      alt={album.title}
+                      alt=""
                       fill
+                      sizes={
+                        isLarge
+                          ? "(max-width: 768px) 100vw, 850px"
+                          : "(max-width: 768px) 100vw, 420px"
+                      }
+                      preload={index < 2}
+                      placeholder={album.lqip ? "blur" : "empty"}
+                      blurDataURL={album.lqip}
                       className="object-cover opacity-70 transition-transform duration-1500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105 group-hover:opacity-100"
                     />
                     <div className="from-raisinBlack via-raisinBlack/40 absolute inset-0 bg-linear-to-t to-transparent opacity-80 transition-opacity duration-700 group-hover:opacity-60" />
 
-                    <div className="absolute top-6 right-6 overflow-hidden">
+                    <div
+                      aria-hidden="true"
+                      className="absolute top-6 right-6 overflow-hidden"
+                    >
                       <span className="font-montserrat block text-xl font-black text-white mix-blend-overlay transition-transform duration-700 group-hover:-translate-y-full">
                         {album.year}
                       </span>
@@ -129,16 +183,17 @@ export default async function GalleryPage() {
                           </span>
                         </div>
 
-                        <h3 className="font-montserrat mb-6 text-2xl leading-tight font-bold text-white md:text-3xl lg:text-4xl">
+                        <h2 className="font-montserrat mb-6 text-2xl leading-tight font-bold text-white md:text-3xl lg:text-4xl">
                           {album.title}
-                        </h3>
+                        </h2>
 
-                        <div className="flex items-center gap-3 opacity-0 transition-all duration-700 group-hover:opacity-100">
+                        <div className="flex items-center gap-3 opacity-0 transition-all duration-700 group-hover:opacity-100 group-focus-visible:opacity-100">
                           <span className="font-montserrat text-[0.65rem] font-bold tracking-[0.2em] text-white uppercase">
                             Otwórz galerię
                           </span>
                           <div className="bg-arylideYellow text-raisinBlack flex h-8 w-8 items-center justify-center rounded-full transition-transform duration-500 group-hover:translate-x-2">
                             <svg
+                              aria-hidden="true"
                               className="h-3 w-3"
                               fill="none"
                               viewBox="0 0 24 24"
@@ -204,6 +259,7 @@ export default async function GalleryPage() {
             >
               Napisz do Nas
               <svg
+                aria-hidden="true"
                 className="h-4 w-4 transition-transform duration-500 group-hover:translate-x-1"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -220,6 +276,6 @@ export default async function GalleryPage() {
           </FadeIn>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

@@ -1,8 +1,7 @@
-// src/components/oferta/OfferStats.tsx
-"use client";
-
-import { useEffect, useRef, useState } from "react";
+// src/components/offer/OfferStats.tsx
+// Komponent serwerowy – po stronie klienta działa tylko licznik (Counter).
 import FadeIn from "@/components/ui/FadeIn";
+import Counter from "./Counter";
 
 interface StatItem {
   value: number;
@@ -38,89 +37,35 @@ const statsData: StatItem[] = [
   },
 ];
 
-function Counter({
-  target,
-  suffix = "",
-  shouldStart,
-}: {
-  target: number;
-  suffix?: string;
-  shouldStart: boolean;
-}) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    if (!shouldStart) return;
-
-    const duration = 2000; // 2 sekundy animacji
-    let startTimestamp: number | null = null;
-
-    const step = (timestamp: number) => {
-      if (!startTimestamp) startTimestamp = timestamp;
-      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-
-      // Płynne zwolnienie pod koniec (easeOutExpo)
-      const easeOut = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      const currentVal = Math.floor(easeOut * target);
-
-      setCount(currentVal);
-
-      if (progress < 1) {
-        window.requestAnimationFrame(step);
-      } else {
-        setCount(target);
-      }
-    };
-
-    window.requestAnimationFrame(step);
-  }, [shouldStart, target]);
-
-  return (
-    <span className="tabular-nums">
-      {count}
-      <span className="text-arylideYellow ml-0.5">{suffix}</span>
-    </span>
-  );
+export interface OfferStatsValues {
+  members?: number;
+  concerts?: number;
+  locations?: number;
 }
 
-export default function OfferStats() {
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.25 },
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
+export default function OfferStats({
+  values,
+}: {
+  values?: OfferStatsValues | null;
+}) {
+  const v = values ?? {};
+  // Liczby edytowalne w Sanity (Ustawienia strony → Liczby na stronie)
+  // Kolejność jak w statsData: członkowie, koncerty, aranżacje (stałe 100%), lokalizacje
+  const overrides = [v.members, v.concerts, undefined, v.locations];
+  const data: StatItem[] = statsData.map((item, i) => {
+    const override = overrides[i];
+    return typeof override === "number" ? { ...item, value: override } : item;
+  });
 
   return (
-    <section
-      ref={sectionRef}
-      className="relative z-20 w-full border-y border-white/10 bg-black/40 py-16 backdrop-blur-md lg:py-20"
-    >
+    <section className="relative z-20 w-full border-y border-white/10 bg-black/40 py-16 backdrop-blur-md lg:py-20">
       <div className="mx-auto max-w-7xl px-6 lg:px-12">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:gap-12">
-          {statsData.map((stat, idx) => (
+          {data.map((stat, idx) => (
             <FadeIn key={stat.label} delay={`${idx * 150}ms`}>
               <div className="group flex flex-col">
                 <span className="font-montserrat text-4xl leading-none font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
-                  <Counter
-                    target={stat.value}
-                    suffix={stat.suffix}
-                    shouldStart={isVisible}
-                  />
+                  <Counter target={stat.value} suffix={stat.suffix} />
                 </span>
                 <span className="font-montserrat text-arylideYellow mt-3 text-xs font-bold tracking-widest uppercase sm:text-sm">
                   {stat.label}

@@ -32,10 +32,15 @@ export default function Values() {
       {/* --- GŁĘBIA W TLE --- */}
       <div className="pointer-events-none absolute inset-0 z-0">
         <div className="absolute top-1/2 left-1/2 h-200 w-200 -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(circle_at_center,rgba(239,203,111,0.04)_0%,transparent_70%)]" />
-        <div className="absolute top-10 left-0 w-full text-center opacity-[0.02] mix-blend-overlay">
-          <span className="font-youngest text-[25vw] leading-none whitespace-nowrap text-white">
-            Wartości
-          </span>
+        <div
+          aria-hidden="true"
+          className="absolute top-10 left-0 w-full text-center opacity-[0.02] mix-blend-overlay"
+        >
+          <span
+            aria-hidden="true"
+            data-deco="Wartości"
+            className="font-youngest text-[25vw] leading-none whitespace-nowrap text-white before:content-[attr(data-deco)]"
+          />
         </div>
       </div>
 
@@ -67,7 +72,10 @@ export default function Values() {
               className={item.marginTop}
             >
               <div className="group hover:border-arylideYellow/30 relative h-full w-full overflow-hidden rounded-3xl border border-white/5 bg-white/2 p-10 backdrop-blur-md transition-all duration-700 hover:-translate-y-4 hover:bg-white/4 hover:shadow-[0_20px_40px_-15px_rgba(239,203,111,0.15)]">
-                <div className="group-hover:text-arylideYellow absolute -top-10 -right-6 z-0 opacity-10 transition-transform duration-700 group-hover:-translate-x-4 group-hover:translate-y-4 group-hover:scale-110 group-hover:opacity-20">
+                <div
+                  aria-hidden="true"
+                  className="group-hover:text-arylideYellow absolute -top-10 -right-6 z-0 opacity-10 transition-transform duration-700 group-hover:-translate-x-4 group-hover:translate-y-4 group-hover:scale-110 group-hover:opacity-20"
+                >
                   <span className="font-youngest mr-17.5 text-[10rem] text-white md:mr-11 md:text-[11rem]">
                     {item.id}
                   </span>
@@ -77,8 +85,9 @@ export default function Values() {
                     <div className="relative h-25 w-25">
                       <Image
                         src={item.icon}
-                        alt={item.title}
+                        alt=""
                         fill
+                        sizes="100px"
                         className="object-contain brightness-0 invert transition-all duration-500 group-hover:brightness-110"
                       />
                     </div>

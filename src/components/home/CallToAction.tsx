@@ -18,7 +18,6 @@ export default function CallToAction() {
           viewBox="0 0 24 24"
           aria-hidden="true"
         >
-          <title>Dekoracyjna nuta</title>
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -34,7 +33,6 @@ export default function CallToAction() {
           viewBox="0 0 24 24"
           aria-hidden="true"
         >
-          <title>Dekoracyjna nuta</title>
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -51,7 +49,10 @@ export default function CallToAction() {
           <div className="flex flex-col justify-center lg:col-span-6">
             <FadeIn>
               <div className="mb-8 flex items-center gap-4">
-                <div className="bg-raisinBlack h-2 w-2 animate-pulse rounded-full" />
+                <div
+                  aria-hidden="true"
+                  className="bg-raisinBlack h-2 w-2 animate-pulse rounded-full"
+                />
                 <span className="font-montserrat text-raisinBlack text-[0.65rem] font-bold tracking-[0.4em] uppercase">
                   Finałowy Akord
                 </span>
@@ -68,8 +69,8 @@ export default function CallToAction() {
 
             <FadeIn delay="200ms">
               <p className="font-montserrat text-raisinBlack/70 mt-8 mb-16 max-w-md text-base leading-relaxed font-medium lg:text-lg">
-                Dołącz do naszego zamkniętego grona. Informacje o zbliżających się wydarzeniach, trafią na
-                Twoją skrzynkę.
+                Dołącz do naszego zamkniętego grona. Informacje o zbliżających
+                się wydarzeniach, trafią na Twoją skrzynkę.
               </p>
             </FadeIn>
 
@@ -105,8 +106,8 @@ export default function CallToAction() {
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     strokeWidth={2}
+                    aria-hidden="true"
                   >
-                    <title>Przejdź do wydarzeń</title>
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -139,8 +140,8 @@ export default function CallToAction() {
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     strokeWidth={2}
+                    aria-hidden="true"
                   >
-                    <title>Przejdź do kontaktu</title>
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"

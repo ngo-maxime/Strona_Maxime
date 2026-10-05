@@ -1,21 +1,32 @@
 "use client";
 
-import Cookies from "js-cookie";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  CONSENT_COOKIE,
+  CONSENT_EVENT,
+  CONSENT_MAX_AGE_DAYS,
+  CONSENT_VERSION,
+  type CookieConsentState,
+  OPEN_SETTINGS_EVENT,
+  readConsent,
+  removeAnalyticsCookies,
+  setCookie,
+} from "@/lib/consent";
 
-export interface CookieConsentState {
-  necessary: boolean;
-  analytics: boolean;
-  marketing: boolean;
-  personalization: boolean;
-}
+export type { CookieConsentState };
 
-const COOKIE_NAME = "maxime_cookie_consent";
+type GtagWindow = Window & { gtag?: (...args: unknown[]) => void };
 
 export default function CookieBanner() {
   const [showBanner, setShowBanner] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  // Na stronach prawnych nie zasłaniamy treści – użytkownik musi móc przeczytać politykę przed decyzją
+  const isLegalPage =
+    pathname === "/polityka-prywatnosci" || pathname === "/regulamin";
 
   const [preferences, setPreferences] = useState<CookieConsentState>({
     necessary: true,
@@ -27,11 +38,9 @@ export default function CookieBanner() {
   // 1. Funkcja przeniesiona wyżej i owinięta w useCallback
   const updateConsentMode = useCallback(
     (consentSettings: CookieConsentState) => {
-      if (
-        typeof window !== "undefined" &&
-        typeof (window as any).gtag === "function"
-      ) {
-        (window as any).gtag("consent", "update", {
+      const w = window as GtagWindow;
+      if (typeof w.gtag === "function") {
+        w.gtag("consent", "update", {
           analytics_storage: consentSettings.analytics ? "granted" : "denied",
           ad_storage: consentSettings.marketing ? "granted" : "denied",
           ad_user_data: consentSettings.marketing ? "granted" : "denied",
@@ -43,7 +52,7 @@ export default function CookieBanner() {
       }
       // Emitowanie eventu dla innych skryptów w Next.js
       window.dispatchEvent(
-        new CustomEvent("cookieConsentUpdated", { detail: consentSettings }),
+        new CustomEvent(CONSENT_EVENT, { detail: consentSettings }),
       );
     },
     [],
@@ -51,26 +60,49 @@ export default function CookieBanner() {
 
   // 2. useEffect teraz bez błędu wywołuje i zależy od updateConsentMode
   useEffect(() => {
-    const consentCookie = Cookies.get(COOKIE_NAME);
+    const saved = readConsent();
 
-    if (!consentCookie) {
+    if (!saved) {
       setShowBanner(true);
     } else {
-      try {
-        const savedPreferences = JSON.parse(consentCookie);
-        setPreferences(savedPreferences);
-        updateConsentMode(savedPreferences);
-      } catch (_e) {
-        setShowBanner(true);
-      }
+      setPreferences(saved);
+      updateConsentMode(saved);
     }
+
+    // Ponowne otwarcie ustawień ze stopki („Zarządzaj Cookies”) bez przeładowania strony
+    const openSettings = () => {
+      setShowBanner(true);
+      setShowPreferences(true);
+    };
+    window.addEventListener(OPEN_SETTINGS_EVENT, openSettings);
+    return () => window.removeEventListener(OPEN_SETTINGS_EVENT, openSettings);
   }, [updateConsentMode]);
 
-  const saveConsent = (consentSettings: CookieConsentState) => {
-    Cookies.set(COOKIE_NAME, JSON.stringify(consentSettings), {
-      expires: 365,
-      sameSite: "Lax",
-    });
+  // Fokus na oknie zgód (dostępność klawiaturowa / czytniki ekranu)
+  useEffect(() => {
+    if (showBanner || showPreferences) {
+      dialogRef.current
+        ?.querySelector<HTMLElement>("button, input:not([disabled])")
+        ?.focus({ preventScroll: true });
+    }
+  }, [showBanner, showPreferences]);
+
+  const saveConsent = (settings: CookieConsentState) => {
+    const consentSettings: CookieConsentState = {
+      ...settings,
+      necessary: true,
+      date: new Date().toISOString(),
+      version: CONSENT_VERSION,
+    };
+
+    setCookie(
+      CONSENT_COOKIE,
+      JSON.stringify(consentSettings),
+      CONSENT_MAX_AGE_DAYS,
+    );
+
+    // Wycofanie zgody na analitykę → usuwamy już zapisane ciasteczka Google Analytics
+    if (!consentSettings.analytics) removeAnalyticsCookies();
 
     setPreferences(consentSettings);
     setShowBanner(false);
@@ -96,6 +128,13 @@ export default function CookieBanner() {
     });
   };
 
+  // „Wróć”: przed pierwszą decyzją wraca do szybkiego wyboru,
+  // po ponownym otwarciu ze stopki po prostu zamyka okno
+  const handleBack = () => {
+    setShowPreferences(false);
+    if (readConsent()) setShowBanner(false);
+  };
+
   const saveCustom = () => {
     saveConsent(preferences);
   };
@@ -105,24 +144,35 @@ export default function CookieBanner() {
   return (
     <>
       {/* Ciemne tło maskujące (overlay) */}
-      <div className="fixed inset-0 z-9998 bg-black/60 backdrop-blur-sm transition-opacity" />
+      {!isLegalPage && (
+        <div className="fixed inset-0 z-9998 bg-black/60 backdrop-blur-sm transition-opacity" />
+      )}
 
       {/* Kontener główny banera */}
       <div className="fixed bottom-0 left-0 right-0 z-9999 flex justify-center p-4 sm:bottom-6 sm:p-0">
-        <div className="font-montserrat bg-raisinBlack w-full max-w-5xl overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/50 sm:mx-6 text-white animate-fade-in-up">
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal={!isLegalPage}
+          aria-labelledby="cookie-banner-title"
+          className="font-montserrat bg-raisinBlack w-full max-w-5xl overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/50 sm:mx-6 text-white animate-fade-in-up"
+        >
           {!showPreferences ? (
             // WIDOK 1: SZYBKI WYBÓR
             <div className="flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between lg:p-8">
               <div className="flex-1">
-                <h2 className="text-arylideYellow mb-3 text-xl font-bold tracking-wide">
+                <h2
+                  id="cookie-banner-title"
+                  className="text-arylideYellow mb-3 text-xl font-bold tracking-wide"
+                >
                   Twoja prywatność, Twoje zasady
                 </h2>
                 <p className="text-sm leading-relaxed text-white/70">
                   Używamy plików cookie, aby optymalizować naszą stronę,
                   analizować ruch i dostarczać Ci jak najlepsze doświadczenia
-                  związane ze Stowarzyszeniem Maxime. Możesz zaakceptować
-                  wszystkie zgody, odrzucić opcjonalne lub zarządzać nimi.
-                  Szczegóły znajdziesz w{" "}
+                  związane z Fundacją Maxime. Możesz zaakceptować wszystkie
+                  zgody, odrzucić opcjonalne lub zarządzać nimi. Szczegóły
+                  znajdziesz w{" "}
                   <Link
                     href="/polityka-prywatnosci"
                     className="text-arylideYellow font-bold underline transition-colors hover:text-white"
@@ -135,18 +185,21 @@ export default function CookieBanner() {
 
               <div className="flex shrink-0 flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">
                 <button
+                  type="button"
                   onClick={() => setShowPreferences(true)}
                   className="rounded-full px-6 py-3 text-sm font-semibold text-white/80 transition-colors hover:bg-white/5 hover:text-white"
                 >
                   Dostosuj
                 </button>
                 <button
+                  type="button"
                   onClick={rejectAll}
                   className="rounded-full border border-white/20 px-6 py-3 text-sm font-bold transition-colors hover:bg-white/10 hover:border-white/40"
                 >
                   Odrzuć
                 </button>
                 <button
+                  type="button"
                   onClick={acceptAll}
                   className="bg-arylideYellow text-raisinBlack rounded-full px-6 py-3 text-sm font-bold shadow-lg shadow-yellow-500/20 transition-transform hover:scale-105 hover:bg-yellow-400"
                 >
@@ -158,7 +211,10 @@ export default function CookieBanner() {
             // WIDOK 2: ZAAWANSOWANE ZARZĄDZANIE
             <div className="flex max-h-[85vh] flex-col overflow-y-auto p-6 lg:p-8">
               <div className="mb-6">
-                <h2 className="text-arylideYellow mb-2 text-2xl font-bold">
+                <h2
+                  id="cookie-banner-title"
+                  className="text-arylideYellow mb-2 text-2xl font-bold"
+                >
                   Zarządzaj plikami cookie
                 </h2>
                 <p className="text-sm text-white/70">
@@ -241,18 +297,21 @@ export default function CookieBanner() {
 
               <div className="mt-8 flex flex-wrap-reverse justify-end gap-3 border-t border-white/10 pt-6">
                 <button
-                  onClick={() => setShowPreferences(false)}
+                  type="button"
+                  onClick={handleBack}
                   className="rounded-full px-6 py-3 text-sm font-bold text-white/70 transition-colors hover:bg-white/5 hover:text-white"
                 >
                   Wróć
                 </button>
                 <button
+                  type="button"
                   onClick={rejectAll}
                   className="rounded-full border border-white/20 px-6 py-3 text-sm font-bold transition-colors hover:bg-white/10"
                 >
                   Tylko niezbędne
                 </button>
                 <button
+                  type="button"
                   onClick={saveCustom}
                   className="bg-arylideYellow text-raisinBlack rounded-full px-8 py-3 text-sm font-bold shadow-lg shadow-yellow-500/20 transition-transform hover:scale-105 hover:bg-yellow-400"
                 >

@@ -1,8 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { groq } from "next-sanity";
-import CookieManagerButton from "@/components/footer/CookieManagerButton";
-import ScrollToTopButton from "@/components/footer/ScrollToTopButton";
+import CookieManagerButton from "@/components/cookies/CookieManagerButton";
+import ScrollToTopButton from "@/components/layout/ScrollToTopButton";
 import NewsletterForm from "@/components/newsletter/NewsletterForm";
 import ActiveLinks from "@/components/ui/ActiveLinks";
 import FadeIn from "@/components/ui/FadeIn";
@@ -12,41 +11,39 @@ import {
   legalLinks,
   mainLinks,
 } from "@/data/navigation";
-import { client } from "@/sanity/lib/client"; // Upewnij się, że ta ścieżka jest poprawna
+import { getSiteSettings } from "@/sanity/lib/settings";
+import HomeLink from "./HomeLink";
 
 export default async function Footer() {
-  // Pobieramy cały dokument 'siteSettings' prosto z Sanity
-  const query = groq`*[_type == "siteSettings"][0]`;
-  const settings = await client.fetch(query);
+  // Ustawienia z Sanity (współdzielone z Navbarem – jedno zapytanie na render).
+  // Brakujące pola w CMS ukrywają dany element zamiast wywracać całą stronę.
+  const { contact = {}, socials = [], author = {} } = await getSiteSettings();
 
-  // Brak fallbacków!
-  // Destrukturyzujemy bezpośrednio to, co przyszło. Jeśli 'settings' będzie nullem (bo zapytanie nic nie zwróci),
-  // ta linijka natychmiast zgłosi błąd, a Ty będziesz wiedział, że coś jest nie tak.
-  const { contact, socials, author } = settings;
-
-  const footerLinks = [...mainLinks, { name: "Opinie", path: "/opinie" }];
+  const footerLinks = mainLinks;
 
   return (
     <footer className="bg-raisinBlack relative z-50 w-full overflow-hidden pt-24 lg:pt-32">
       <div className="pointer-events-none absolute -bottom-2 left-1/2 z-0 w-full -translate-x-1/2 text-center opacity-[0.03] select-none sm:-bottom-4 lg:-bottom-10">
-        <span className="font-montserrat block w-full text-[20vw] leading-none font-black text-white md:text-[22vw] lg:text-[22vw]">
-          MAXIME
-        </span>
+        <span
+          aria-hidden="true"
+          data-deco="MAXIME"
+          className="font-montserrat block w-full text-[20vw] leading-none font-black text-white md:text-[22vw] lg:text-[22vw] before:content-[attr(data-deco)]"
+        />
       </div>
 
       <div className="relative z-10 mx-auto w-full max-w-7xl px-6 lg:px-12">
         <div className="grid grid-cols-1 gap-16 border-b border-white/10 pb-16 lg:grid-cols-12 lg:gap-12 lg:pb-24">
           <div className="flex flex-col items-start lg:col-span-4">
             <FadeIn>
-              <Link href="/" className="mb-8 block">
+              <HomeLink className="mb-8 block">
                 <Image
                   src="/logo.svg"
                   alt="Maxime Logo"
                   width={160}
                   height={55}
-                  className="h-10 w-auto brightness-0 invert lg:h-12"
+                  className="h-10 w-auto lg:h-12"
                 />
-              </Link>
+              </HomeLink>
               <span className="font-youngest text-arylideYellow mb-12 block text-4xl">
                 Z pasji do muzyki.
               </span>
@@ -54,7 +51,8 @@ export default async function Footer() {
               <div className="flex flex-col gap-6">
                 <div className="group flex flex-col">
                   <p>
-                    Odkryj z nami maksymalną jakość, maksymalne zaangażowanie oraz maksymalną radość z muzyki.
+                    Odkryj z nami maksymalną jakość, maksymalne zaangażowanie
+                    oraz maksymalną radość z muzyki.
                   </p>
                 </div>
 
@@ -62,18 +60,22 @@ export default async function Footer() {
                   <span className="font-montserrat mb-1 text-[0.6rem] font-bold tracking-[0.3em] text-white/40 uppercase">
                     Kontakt
                   </span>
-                  <a
-                    href={`mailto:${contact.email}`}
-                    className="font-montserrat group-hover:text-arylideYellow text-sm font-light text-white/80 transition-colors"
-                  >
-                    {contact.email}
-                  </a>
-                  <a
-                    href={`tel:${contact.phone.replace(/\s+/g, "")}`}
-                    className="font-montserrat group-hover:text-arylideYellow mt-1 text-sm font-light text-white/80 transition-colors"
-                  >
-                    {contact.phone}
-                  </a>
+                  {contact.email && (
+                    <a
+                      href={`mailto:${contact.email}`}
+                      className="font-montserrat hover:text-arylideYellow text-sm font-light text-white/80 transition-colors"
+                    >
+                      {contact.email}
+                    </a>
+                  )}
+                  {contact.phone && (
+                    <a
+                      href={`tel:${contact.phone.replace(/[^\d+]/g, "")}`}
+                      className="font-montserrat hover:text-arylideYellow mt-1 text-sm font-light text-white/80 transition-colors"
+                    >
+                      {contact.phone}
+                    </a>
+                  )}
                 </div>
               </div>
             </FadeIn>
@@ -96,7 +98,7 @@ export default async function Footer() {
                 Newsletter
               </span>
               <p className="font-montserrat mb-6 text-sm leading-relaxed font-light text-white/60">
-              Bądź na bieżąco z nadchodzącymi wydarzeniami.
+                Bądź na bieżąco z nadchodzącymi wydarzeniami.
               </p>
 
               <NewsletterForm variant="dark" />
@@ -111,7 +113,7 @@ export default async function Footer() {
                       <a
                         href={social.url}
                         target="_blank"
-                        rel="noreferrer"
+                        rel="noopener noreferrer"
                         className="group hover:border-arylideYellow hover:bg-arylideYellow hover:text-raisinBlack flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition-all duration-300 hover:-translate-y-1"
                         aria-label={social.platform}
                       >
@@ -148,17 +150,23 @@ export default async function Footer() {
           </FadeIn>
 
           <FadeIn delay="800ms" className="flex items-center gap-8">
-            <span className="font-montserrat text-xs font-light text-white/40">
-              Wykonanie:{" "}
-              <a
-                href={author.url}
-                target="_blank"
-                rel="noreferrer"
-                className="hover:text-arylideYellow font-medium text-white transition-colors"
-              >
-                {author.name}
-              </a>
-            </span>
+            {author.name && (
+              <span className="font-montserrat text-xs font-light text-white/40">
+                Wykonanie:{" "}
+                {author.url ? (
+                  <a
+                    href={author.url}
+                    target="_blank"
+                    rel="noopener"
+                    className="hover:text-arylideYellow font-medium text-white transition-colors"
+                  >
+                    {author.name}
+                  </a>
+                ) : (
+                  <span className="font-medium text-white">{author.name}</span>
+                )}
+              </span>
+            )}
 
             <ScrollToTopButton />
           </FadeIn>

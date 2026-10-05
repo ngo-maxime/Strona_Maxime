@@ -1,12 +1,24 @@
 // src/app/(user)/galeria/[slug]/page.tsx
 
-import Image from "next/image";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { defineQuery } from "next-sanity";
-import PhotoGrid from "@/components/gallery/slug/PhotoGrid";
+import PhotoGrid, { type GalleryPhoto } from "@/components/gallery/PhotoGrid";
+import JsonLd from "@/components/seo/JsonLd";
+import Image from "@/components/ui/CmsImage";
 import FadeIn from "@/components/ui/FadeIn";
-import { sanityFetch } from "@/sanity/lib/live";
+import { MONTHS_GENITIVE, parsePlainDate } from "@/lib/date";
+import {
+  breadcrumbJsonLd,
+  ORGANIZATION_ID,
+  pageMetadata,
+  SITE_URL,
+  sanityOgImage,
+  truncate,
+} from "@/lib/site";
+import { client } from "@/sanity/lib/client";
+import { sanityFetch } from "@/sanity/lib/fetch";
 
 const ALBUM_QUERY = defineQuery(`
   *[_type == "gallery" && slug.current == $slug][0] {
@@ -17,9 +29,61 @@ const ALBUM_QUERY = defineQuery(`
     photographer,
     description,
     "coverImage": coverImage.asset->url,
-    "photos": photos[].asset->url
+    "coverLqip": coverImage.asset->metadata.lqip,
+    // Adres + opis + miniaturka LQIP (rozmyty podgląd podczas ładowania)
+    "photos": photos[defined(asset)]{
+      "url": asset->url,
+      alt,
+      "lqip": asset->metadata.lqip
+    }
   }
 `);
+
+const ALBUM_META_QUERY = defineQuery(`
+  *[_type == "gallery" && slug.current == $slug][0] {
+    title, description, location, date, "image": coverImage.asset->url
+  }
+`);
+
+const GALLERY_SLUGS_QUERY = defineQuery(
+  `*[_type == "gallery" && defined(slug.current)].slug.current`,
+);
+
+type Props = { params: Promise<{ slug: string }> };
+
+export async function generateStaticParams() {
+  try {
+    const slugs = await client.fetch<string[]>(GALLERY_SLUGS_QUERY);
+    return slugs.map((slug) => ({ slug }));
+  } catch {
+    return [];
+  }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const { data } = await sanityFetch({
+    query: ALBUM_META_QUERY,
+    params: { slug },
+  });
+  if (!data) return {};
+
+  return pageMetadata({
+    title: `${data.title} – galeria zdjęć`,
+    description: truncate(
+      [
+        `${data.title} – galeria zdjęć z koncertu Fundacji Maxime`,
+        [data.location, data.date?.slice(0, 4)].filter(Boolean).join(", "),
+        data.description,
+      ]
+        .filter(Boolean)
+        .join(". "),
+    ),
+    path: `/galeria/${slug}`,
+    image: sanityOgImage(data.image),
+    imageAlt: data.title,
+  });
+}
 
 const NEXT_ALBUM_QUERY = defineQuery(`
   *[_type == "gallery" && slug.current != $slug] | order(date desc)[0] {
@@ -29,11 +93,7 @@ const NEXT_ALBUM_QUERY = defineQuery(`
   }
 `);
 
-export default async function GalleryAlbumPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function GalleryAlbumPage({ params }: Props) {
   const resolvedParams = await params;
 
   const [albumRes, nextAlbumRes] = await Promise.all([
@@ -49,45 +109,71 @@ export default async function GalleryAlbumPage({
 
   if (!album) notFound();
 
-  // Formatowanie daty na polski
-  const d = new Date(album.date);
-  const monthsPl = [
-    "Stycznia",
-    "Lutego",
-    "Marca",
-    "Kwietnia",
-    "Maja",
-    "Czerwca",
-    "Lipca",
-    "Sierpnia",
-    "Września",
-    "Października",
-    "Listopada",
-    "Grudnia",
-  ];
-  const formattedDate = `${d.getDate()} ${monthsPl[d.getMonth()]} ${d.getFullYear()}`;
+  // Pole `date` w Sanity to czysta data (bez godziny) – parsujemy ją bez przesunięć strefy
+  const d = album.date ? parsePlainDate(album.date) : null;
+  const formattedDate = d
+    ? `${d.day} ${MONTHS_GENITIVE[d.monthIndex]} ${d.year}`
+    : "";
+  const photos: GalleryPhoto[] = (album.photos ?? []).filter(
+    (p: GalleryPhoto) => p?.url,
+  );
+  // Dane strukturalne galerii – zdjęcia mogą pojawiać się w Grafice Google z opisem i źródłem
+  const galleryJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ImageGallery",
+    name: album.title,
+    url: `${SITE_URL}/galeria/${resolvedParams.slug}`,
+    ...(album.description && { description: album.description }),
+    ...(album.date && { datePublished: album.date }),
+    author: { "@id": ORGANIZATION_ID },
+    image: photos.slice(0, 30).map((p) => ({
+      "@type": "ImageObject",
+      contentUrl: p.url,
+      ...(p.alt && { caption: p.alt }),
+      creditText: "Fundacja Maxime",
+      copyrightNotice: "Fundacja Maxime",
+    })),
+  };
 
   return (
-    <main className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full overflow-x-hidden">
+    <div className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full overflow-x-hidden">
+      <JsonLd data={galleryJsonLd} />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Galeria", path: "/galeria" },
+          { name: album.title, path: `/galeria/${resolvedParams.slug}` },
+        ])}
+      />
       {/* KINOWY HERO SECTION ALBUMU (Renderowany na serwerze!) */}
       <section className="relative flex min-h-[85vh] w-full flex-col justify-end overflow-hidden px-6 pt-40 pb-16 lg:px-12">
         <div className="absolute inset-0 z-0">
           <Image
-            src={album.coverImage}
-            alt={album.title}
+            src={album.coverImage || "/video-poster.webp"}
+            alt=""
             fill
-            priority
+            preload
+            fetchPriority="high"
+            sizes="100vw"
+            placeholder={album.coverLqip ? "blur" : "empty"}
+            blurDataURL={album.coverLqip ?? undefined}
             className="scale-100 object-cover opacity-60 transition-transform duration-3000 ease-out hover:scale-105"
           />
           <div className="from-raisinBlack via-raisinBlack/60 absolute inset-0 bg-linear-to-t to-transparent" />
           <div className="from-raisinBlack absolute inset-0 bg-linear-to-r via-transparent to-transparent opacity-80" />
         </div>
 
-        <div className="pointer-events-none absolute bottom-0 -left-10 z-0 opacity-10 mix-blend-overlay select-none">
-          <span className="font-montserrat text-[25vw] leading-none font-black text-white lg:text-[20vw]">
-            {album.date.slice(0, 4)}
-          </span>
-        </div>
+        {d && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute bottom-0 -left-10 z-0 opacity-10 mix-blend-overlay select-none"
+          >
+            <span
+              aria-hidden="true"
+              data-deco={d.year}
+              className="font-montserrat text-[25vw] leading-none font-black text-white lg:text-[20vw] before:content-[attr(data-deco)]"
+            />
+          </div>
+        )}
 
         <div className="relative z-10 mx-auto w-full max-w-7xl">
           <FadeIn>
@@ -124,9 +210,14 @@ export default async function GalleryAlbumPage({
 
             <div className="text-left lg:col-span-4 lg:flex lg:flex-col lg:items-end lg:justify-end lg:pb-4 lg:text-right">
               <FadeIn delay="500ms">
-                <p className="font-youngest text-arylideYellow mb-2 text-3xl md:text-4xl">
-                  {formattedDate}
-                </p>
+                {formattedDate && (
+                  <time
+                    dateTime={album.date}
+                    className="font-youngest text-arylideYellow mb-2 block text-3xl md:text-4xl"
+                  >
+                    {formattedDate}
+                  </time>
+                )}
                 <p className="font-montserrat text-sm font-medium text-white/80">
                   {album.location}
                 </p>
@@ -161,7 +252,7 @@ export default async function GalleryAlbumPage({
                   Liczba kadrów
                 </span>
                 <span className="font-montserrat text-base font-medium text-white">
-                  {album.photos?.length || 0} zdjęć
+                  {photos.length} zdjęć
                 </span>
               </FadeIn>
             </div>
@@ -170,7 +261,7 @@ export default async function GalleryAlbumPage({
       </section>
 
       {/* SIATKA ZDJĘĆ Z LIGHTBOXEM (Komponent Kliencki) */}
-      <PhotoGrid photos={album.photos} />
+      <PhotoGrid photos={photos} albumTitle={album.title} />
 
       {/* NASTĘPNY ALBUM CTA (Renderowane na serwerze!) */}
       {nextAlbum && (
@@ -182,8 +273,9 @@ export default async function GalleryAlbumPage({
             <div className="absolute inset-0 z-0">
               <Image
                 src={nextAlbum.image || "/video-poster.webp"}
-                alt={nextAlbum.title}
+                alt=""
                 fill
+                sizes="100vw"
                 className="scale-100 object-cover opacity-50 transition-transform duration-3000 ease-out group-hover:scale-105"
               />
               <div className="bg-oxfordBlue/60 group-hover:bg-oxfordBlue/80 absolute inset-0 transition-colors duration-700" />
@@ -206,6 +298,6 @@ export default async function GalleryAlbumPage({
           </Link>
         </section>
       )}
-    </main>
+    </div>
   );
 }

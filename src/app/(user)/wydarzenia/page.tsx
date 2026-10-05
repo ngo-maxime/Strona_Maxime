@@ -2,8 +2,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { defineQuery } from "next-sanity";
 import EventsList, { type EventProps } from "@/components/events/EventsList";
+import JsonLd from "@/components/seo/JsonLd";
 import FadeIn from "@/components/ui/FadeIn";
-import { sanityFetch } from "@/sanity/lib/live";
+import { getWarsawParts, MONTHS_NOMINATIVE } from "@/lib/date";
+import { pageJsonLd, pageMetadata } from "@/lib/site";
+import { sanityFetch } from "@/sanity/lib/fetch";
+
+export const metadata = pageMetadata({
+  title: "Koncerty i wydarzenia",
+  description:
+    "Sprawdź harmonogram naszych nadchodzących oraz minionych koncertów. Dołącz do nas na żywo i stań się częścią widowiska.",
+  path: "/wydarzenia",
+});
 
 // Pobieramy wszystkie wydarzenia
 const EVENTS_QUERY = defineQuery(`
@@ -16,35 +26,30 @@ const EVENTS_QUERY = defineQuery(`
   }
 `);
 
-const monthsPl = [
-  "Styczeń",
-  "Luty",
-  "Marzec",
-  "Kwiecień",
-  "Maj",
-  "Czerwiec",
-  "Lipiec",
-  "Sierpień",
-  "Wrzesień",
-  "Październik",
-  "Listopad",
-  "Grudzień",
-];
+interface RawEvent {
+  id: string;
+  title?: string;
+  date?: string;
+  location?: string;
+  image?: string;
+}
 
-function formatEventData(rawEvent: any): EventProps {
+function formatEventData(rawEvent: RawEvent): EventProps {
   const d = rawEvent.date ? new Date(rawEvent.date) : new Date();
   const now = new Date();
+  // Dzień/miesiąc/godzina w strefie Europe/Warsaw (serwer działa w UTC)
+  const w = getWarsawParts(d);
 
   return {
     id: rawEvent.id,
     title: rawEvent.title || "Bez tytułu",
     location: rawEvent.location || "Miejsce do ustalenia",
     image: rawEvent.image || "/video-poster.webp",
-    day: String(d.getDate()).padStart(2, "0"),
-    month: monthsPl[d.getMonth()],
-    year: String(d.getFullYear()),
-    time: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
-    date: rawEvent.date, // DODANO: Pełna data do sortowania po stronie klienta
+    day: String(w.day).padStart(2, "0"),
+    month: MONTHS_NOMINATIVE[w.monthIndex],
+    year: String(w.year),
+    time: `${w.hours}:${w.minutes}`,
+    date: rawEvent.date ?? d.toISOString(), // Pełna data do sortowania po stronie klienta
     isPast: d < now,
   };
 }
@@ -54,10 +59,24 @@ export default async function EventsPage() {
     query: EVENTS_QUERY,
   });
 
-  const formattedEvents = data.map(formatEventData);
+  const formattedEvents = (data ?? []).map(formatEventData);
 
   return (
-    <main className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full">
+    <div className="bg-raisinBlack selection:bg-arylideYellow selection:text-raisinBlack relative min-h-screen w-full">
+      <JsonLd
+        data={pageJsonLd({
+          type: "CollectionPage",
+          name: "Koncerty i wydarzenia",
+          description:
+            "Sprawdź harmonogram naszych nadchodzących oraz minionych koncertów. Dołącz do nas na żywo i stań się częścią widowiska.",
+          path: "/wydarzenia",
+          crumb: "Wydarzenia",
+          items: formattedEvents.map((e: { title: string; id: string }) => ({
+            name: e.title,
+            path: `/wydarzenia/${e.id}`,
+          })),
+        })}
+      />
       {/* --- HERO SECTION --- */}
       <section className="relative z-10 flex min-h-[60vh] w-full flex-col justify-center overflow-hidden px-6 pt-32 lg:px-12 lg:pt-40">
         <div className="pointer-events-none absolute top-20 -right-20 z-0 h-160 w-160 opacity-5 lg:top-0 lg:h-240 lg:w-240">
@@ -65,7 +84,7 @@ export default async function EventsPage() {
             src="/Asset-1.svg"
             alt=""
             fill
-            priority
+            sizes="960px"
             className="object-contain brightness-0 invert"
           />
         </div>
@@ -121,6 +140,6 @@ export default async function EventsPage() {
           </Link>
         </FadeIn>
       </section>
-    </main>
+    </div>
   );
 }

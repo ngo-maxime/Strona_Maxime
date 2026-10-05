@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import Link from "next/link";
+import { useId, useState } from "react";
 import { sendEmail } from "@/actions/sendEmail"; // <-- Import Akcji Serwerowej
 import FadeIn from "@/components/ui/FadeIn";
+import Honeypot from "@/components/ui/Honeypot";
 
 const subjects = [
   "Współpraca",
@@ -18,6 +20,14 @@ export default function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const ids = {
+    subject: `${uid}-subject`,
+    custom: `${uid}-custom`,
+    name: `${uid}-name`,
+    email: `${uid}-email`,
+    message: `${uid}-message`,
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,8 +39,13 @@ export default function ContactForm() {
     // Ręcznie dołączamy temat wybrany z naszych customowych "przycisków"
     formData.append("subjectCategory", activeSubject);
 
-    // Wywołanie akcji serwerowej
-    const response = await sendEmail(formData);
+    // Wywołanie akcji serwerowej (z obsługą błędu sieci)
+    let response: { success?: boolean; error?: string };
+    try {
+      response = await sendEmail(formData);
+    } catch {
+      response = { error: "Wystąpił nieoczekiwany błąd serwera." };
+    }
 
     setIsSubmitting(false);
 
@@ -54,6 +69,7 @@ export default function ContactForm() {
           src="/Asset-1.svg"
           alt=""
           fill
+          sizes="600px"
           className="object-contain brightness-0 invert"
         />
       </div>
@@ -72,9 +88,13 @@ export default function ContactForm() {
 
         <div className="relative rounded-3xl border border-white/10 bg-white/3 p-8 shadow-2xl backdrop-blur-md md:p-12 lg:p-16">
           {isSubmitted ? (
-            <div className="animate-fade-in-up flex flex-col items-center justify-center py-20 text-center">
+            <div
+              role="status"
+              className="animate-fade-in-up flex flex-col items-center justify-center py-20 text-center"
+            >
               <div className="bg-arylideYellow text-oxfordBlue mb-8 flex h-24 w-24 items-center justify-center rounded-full">
                 <svg
+                  aria-hidden="true"
                   className="h-10 w-10"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -97,18 +117,31 @@ export default function ContactForm() {
               </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-12">
+            <form
+              onSubmit={handleSubmit}
+              className="relative flex flex-col gap-12"
+              aria-busy={isSubmitting}
+            >
+              <Honeypot />
               <FadeIn delay="100ms">
-                <span className="font-montserrat mb-4 block text-xs font-bold tracking-[0.2em] text-white/50 uppercase">
+                <span
+                  id={ids.subject}
+                  className="font-montserrat mb-4 block text-xs font-bold tracking-[0.2em] text-white/50 uppercase"
+                >
                   01. W jakiej sprawie piszesz?
                 </span>
 
-                <div className="flex flex-wrap gap-3">
+                <div
+                  className="flex flex-wrap gap-3"
+                  role="group"
+                  aria-labelledby={ids.subject}
+                >
                   {subjects.map((subject) => (
                     <button
                       key={subject}
                       type="button"
                       onClick={() => setActiveSubject(subject)}
+                      aria-pressed={activeSubject === subject}
                       className={`font-montserrat rounded-full border px-6 py-3 text-xs font-bold tracking-widest uppercase transition-all duration-300 ${
                         activeSubject === subject
                           ? "border-arylideYellow bg-arylideYellow text-raisinBlack"
@@ -127,13 +160,19 @@ export default function ContactForm() {
                       : "mt-0 grid-rows-[0fr] opacity-0"
                   }`}
                 >
-                  <div className="overflow-hidden">
+                  <div
+                    className="overflow-hidden"
+                    inert={activeSubject !== "Inne"}
+                  >
                     <div className="group relative">
                       {/* DODANO: name="customSubject" */}
                       <input
+                        id={ids.custom}
                         type="text"
                         name="customSubject"
                         placeholder="Temat..."
+                        aria-label="Temat..."
+                        maxLength={150}
                         className="font-montserrat focus:border-arylideYellow w-full border-b border-white/20 bg-transparent py-3 text-lg font-light text-white transition-colors outline-none placeholder:text-white/20 md:text-xl"
                         required={activeSubject === "Inne"}
                       />
@@ -145,13 +184,18 @@ export default function ContactForm() {
 
               <div className="grid grid-cols-1 gap-12 md:grid-cols-2 md:gap-8">
                 <FadeIn delay="200ms" className="group relative">
-                  <span className="font-montserrat group-focus-within:text-arylideYellow mb-2 block text-xs font-bold tracking-[0.2em] text-white/50 uppercase transition-colors">
+                  <label
+                    htmlFor={ids.name}
+                    className="font-montserrat group-focus-within:text-arylideYellow mb-2 block text-xs font-bold tracking-[0.2em] text-white/50 uppercase transition-colors"
+                  >
                     02. Twoje Imię i Nazwisko
-                  </span>
-                  {/* DODANO: name="name" */}
+                  </label>
                   <input
+                    id={ids.name}
                     type="text"
                     name="name"
+                    autoComplete="name"
+                    maxLength={120}
                     required
                     placeholder="Jan Kowalski"
                     className="font-montserrat focus:border-arylideYellow w-full border-b border-white/20 bg-transparent py-4 text-xl font-light text-white transition-colors outline-none placeholder:text-white/20 md:text-2xl"
@@ -160,13 +204,19 @@ export default function ContactForm() {
                 </FadeIn>
 
                 <FadeIn delay="300ms" className="group relative">
-                  <span className="font-montserrat group-focus-within:text-arylideYellow mb-2 block text-xs font-bold tracking-[0.2em] text-white/50 uppercase transition-colors">
+                  <label
+                    htmlFor={ids.email}
+                    className="font-montserrat group-focus-within:text-arylideYellow mb-2 block text-xs font-bold tracking-[0.2em] text-white/50 uppercase transition-colors"
+                  >
                     03. Twój e-mail
-                  </span>
-                  {/* DODANO: name="email" */}
+                  </label>
                   <input
+                    id={ids.email}
                     type="email"
                     name="email"
+                    autoComplete="email"
+                    inputMode="email"
+                    maxLength={254}
                     required
                     placeholder="jan@domena.pl"
                     className="font-montserrat focus:border-arylideYellow w-full border-b border-white/20 bg-transparent py-4 text-xl font-light text-white transition-colors outline-none placeholder:text-white/20 md:text-2xl"
@@ -176,12 +226,16 @@ export default function ContactForm() {
               </div>
 
               <FadeIn delay="400ms" className="group relative">
-                <span className="font-montserrat group-focus-within:text-arylideYellow mb-4 block text-xs font-bold tracking-[0.2em] text-white/50 uppercase transition-colors">
+                <label
+                  htmlFor={ids.message}
+                  className="font-montserrat group-focus-within:text-arylideYellow mb-4 block text-xs font-bold tracking-[0.2em] text-white/50 uppercase transition-colors"
+                >
                   04. Treść wiadomości
-                </span>
-                {/* DODANO: name="message" */}
+                </label>
                 <textarea
+                  id={ids.message}
                   name="message"
+                  maxLength={5000}
                   required
                   rows={4}
                   placeholder="Opisz nam szczegóły..."
@@ -193,7 +247,7 @@ export default function ContactForm() {
               {/* OBSŁUGA BŁĘDU */}
               {errorMessage && (
                 <FadeIn className="text-center">
-                  <span className="text-sm font-bold text-red-400">
+                  <span role="alert" className="text-sm font-bold text-red-400">
                     {errorMessage}
                   </span>
                 </FadeIn>
@@ -204,8 +258,14 @@ export default function ContactForm() {
                 className="mt-4 flex flex-col items-center justify-between gap-6 sm:flex-row sm:items-end"
               >
                 <span className="font-montserrat max-w-xs text-center text-[0.6rem] font-medium tracking-widest text-white/40 uppercase sm:text-left">
-                  * Zgodnie z naszą polityką prywatności, Twoje dane są
-                  bezpieczne i służą wyłącznie do kontaktu.
+                  * Zgodnie z naszą{" "}
+                  <Link
+                    href="/polityka-prywatnosci"
+                    className="underline underline-offset-2 transition-colors hover:text-white"
+                  >
+                    polityką prywatności
+                  </Link>
+                  , Twoje dane są bezpieczne i służą wyłącznie do kontaktu.
                 </span>
 
                 <button
@@ -217,6 +277,7 @@ export default function ContactForm() {
                     {isSubmitting ? "Wysyłanie..." : "Wyślij wiadomość"}
                     {!isSubmitting && (
                       <svg
+                        aria-hidden="true"
                         className="h-4 w-4 transition-transform duration-500 group-hover:translate-x-2"
                         fill="none"
                         viewBox="0 0 24 24"
@@ -231,7 +292,7 @@ export default function ContactForm() {
                       </svg>
                     )}
                   </span>
-                  <div className="absolute inset-0 z-0 h-full w-full -translate-x-full rounded-full bg-white/40 transition-transform duration-700 ease-out group-hover:translate-x-0" />
+                  <span className="absolute inset-0 z-0 h-full w-full -translate-x-full rounded-full bg-white/40 transition-transform duration-700 ease-out group-hover:translate-x-0" />
                 </button>
               </FadeIn>
             </form>
